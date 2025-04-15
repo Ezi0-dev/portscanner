@@ -92,7 +92,11 @@ root = Tk()
 root.title("Ezi0 Port Scanner")
 root.geometry("500x500")
 root.resizable(False, False)
-root.iconbitmap("icon.ico")
+
+try :
+    root.iconbitmap("icon.ico")
+except:
+    pass
 
 # Inputs
 frame = Frame(root)
