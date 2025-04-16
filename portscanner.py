@@ -3,10 +3,10 @@ import time
 import threading
 import os
 from tkinter import *
-from tkinter import ttk, messagebox
+from tkinter import ttk, filedialog, messagebox
 from concurrent.futures import ThreadPoolExecutor, as_completed #Threads to make it scan ports faster.
 
-
+scan_completed = False 
 
 def scan_port(ip, port): # Opens a socket -> Tries to connect to a specific port -> Prints if its open.
     try:
@@ -43,6 +43,10 @@ def start_scan():
     result_box.delete(1.0, END)
     result_box.insert(END, f"Scanning {ip} from port {start_port} to {end_port}...\n")
     result_box.config(state=DISABLED)
+    global scan_completed
+    scan_completed = False
+    save_button.config(state=DISABLED)
+    start_button.config(state=DISABLED)
 
     # Start scanning with threads.
     thread = threading.Thread(target=run_scan, args=(ip, start_port, end_port))
@@ -83,9 +87,33 @@ def run_scan(ip, start_port, end_port):
     duration = end_time - start_time
 
     result_box.config(state=NORMAL)
-    result_box.config(END, f"\nScan complete in {duration:.2f} seconds.\n", "info")
+    result_box.insert(END, f"\nScan complete in {duration:.2f} seconds. (っ◔◡◔)っ\n", "info")
     result_box.config(state=DISABLED)
+    global scan_completed
+    scan_completed = True
+    save_button.config(state=NORMAL)
+    start_button.config(state=NORMAL)
     
+def save_results():
+    global scan_completed
+    if not scan_completed:
+        messagebox.showwarning("Scan not complete", "Please complete a scan before saving.")
+        return
+        
+    file_path = filedialog.asksaveasfilename(defaultextension=".txt",
+        filetypes=[
+            ("Text files", "*.txt")
+                   ]
+        
+    )
+    if file_path:
+        content = result_box.get("1.0", END)
+        try:
+            with open(file_path, "w", encoding="utf-8") as file:
+                file.write(content)
+            messagebox.showinfo("Saved", f"Results are saved to :\n{file_path}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not save file:\n{e}")
 # - GUI - #
 
 root = Tk()
@@ -98,37 +126,56 @@ try :
 except:
     pass
 
+# Tabs
+notebook = ttk.Notebook(root)
+notebook.pack(fill="both", expand=True)
+
+scanner_tab = Frame(notebook)
+notebook.add(scanner_tab, text="Scanner")
+
+settings_tab = Frame(notebook)
+notebook.add(settings_tab, text="Settings")
+
 # Inputs
-frame = Frame(root)
+frame = Frame(scanner_tab)
 frame.pack(pady=10)
 
-Label(frame, text="Target IP :").grid(row=0, column=0, sticky=E)
-ip_entry = Entry(frame)
-ip_entry.grid(row=0, column=1, padx=5)
+ip_entry_label = Label(frame, text="Target IP:", font=("Lucida Console", 14, "bold"))
+ip_entry_label.grid(row=0, column=0, sticky=E)
+ip_entry = Entry(frame, bd=1, relief="solid", font=("Segoe UI", 10, "bold"))
+ip_entry.grid(row=0, column=1, padx=2, pady=2)
 
-Label(frame, text="Start Port :").grid(row=1, column=0, sticky=E)
-start_port_entry = Entry(frame)
-start_port_entry.grid(row=1, column=1, padx=5)
+start_port_label = Label(frame, text="Start Port:", font=("Lucida Console", 14, "bold"))
+start_port_label.grid(row=1, column=0, sticky=E)
+start_port_entry = Entry(frame, bd=1, relief="solid", font=("Segoe UI", 10, "bold"))
+start_port_entry.grid(row=1, column=1, padx=2, pady=2)
 
-Label(frame, text="End Port :").grid(row=2, column=0, sticky=E)
-end_port_entry = Entry(frame)
-end_port_entry.grid(row=2, column=1, padx=5)
+end_port_label = Label(frame, text="End Port:", font=("Lucida Console", 14, "bold"))
+end_port_label.grid(row=2, column=0, sticky=E)
+end_port_entry = Entry(frame, bd=1, relief="solid", font=("Segoe UI", 10, "bold"))
+end_port_entry.grid(row=2, column=1, padx=2, pady=2)
 
-# Button -> Links button to start_scan function
-start_button = Button(root, width=20, height=2, text="Start Scan", borderwidth=0, bg="#1e1e1e", fg="white", font=("Lucida Console", 10), command=start_scan)
-start_button.pack(pady=10)
+# Button -> Links button to start_scan and save_results
+button_frame = Frame(scanner_tab)
+button_frame.pack(pady=5, padx=10)
+
+start_button = Button(button_frame, width=20, height=2, state=NORMAL, text="Start Scan", borderwidth=0, bg="#1e1e1e", fg="white", font=("Lucida Console", 12, "bold"), command=start_scan)
+start_button.pack(side=RIGHT, padx=10)
+
+save_button = Button(button_frame, width=20, height=2, state=DISABLED, text="Save Results", borderwidth=0, bg="#1e1e1e", fg="white", font=("Lucida Console", 12, "bold"), command=save_results)
+save_button.pack(side=RIGHT, padx=10)
 
 # Progress bar
-progress_bar = ttk.Progressbar(root, length=400)
-progress_bar.pack(pady=5)
+progress_bar = ttk.Progressbar(scanner_tab, length=480)
+progress_bar.pack(pady=5, padx=10)
 
 # Results box
-result_box = Text(root, height=30, width=60, state=DISABLED, font=("Lucida Console", 10), bg="#1e1e1e", fg="#00ff00")
-result_box.pack(pady=10, padx=10)
+result_box = Text(scanner_tab, height=30, width=60, state=DISABLED, font=("Lucida Console", 12), bg="#1e1e1e", fg="#00ff00")
+result_box.pack(pady=5, padx=10)
 
 # Text styling
 result_box.tag_config("open", foreground="#00ff00")
-result_box.tag_config("info", foreground="#55aaff")
+result_box.tag_config("info", foreground="#6600ff")
 
 # Makes sure the code doesn't run in the background when closed.
 def on_closing():
