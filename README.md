@@ -5,5 +5,5 @@ Use "portscannerold" if you dont want GUI<br />
 
 - [ ] **Add Logo.** 🔅 <br />
 - [ ] **Add UDP scanning.** 🔍 <br />
-- [ ] **Add Settings tab.** ⚙️ <br />
-- [ ] **Add Output to txt file.** 📃 <br />
+- [x] **Add Settings tab.** ⚙️ <br />
+- [x] **Add Output to txt file.** 📃 <br />
