@@ -95,11 +95,6 @@ def run_scan(ip, start_port, end_port):
     start_button.config(state=NORMAL)
     
 def save_results():
-    global scan_completed
-    if not scan_completed:
-        messagebox.showwarning("Scan not complete", "Please complete a scan before saving.")
-        return
-        
     file_path = filedialog.asksaveasfilename(defaultextension=".txt",
         filetypes=[
             ("Text files", "*.txt")
