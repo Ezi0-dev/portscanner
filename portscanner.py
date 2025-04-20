@@ -2,11 +2,17 @@ import socket
 import time
 import threading
 import os
+import csv, json
 from tkinter import *
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox, simpledialog
 from concurrent.futures import ThreadPoolExecutor, as_completed #Threads to make it scan ports faster.
 
 scan_completed = False 
+scan_results = {
+    "target": "", # Header for IP that was scanned.
+    "ports" : []  # List of the ports
+}
+
 
 def scan_port(ip, port): # Opens a socket -> Tries to connect to a specific port -> Prints if its open.
     try:
@@ -52,6 +58,7 @@ def start_scan():
     thread = threading.Thread(target=run_scan, args=(ip, start_port, end_port))
     thread.start()
 
+
 def run_scan(ip, start_port, end_port):
     start_time = time.time()
     total_ports = end_port - start_port + 1
@@ -78,37 +85,71 @@ def run_scan(ip, start_port, end_port):
 
             if result:
                 port, service = result
+                open_ports.append((port, service))
+
+                scan_results["target"] = ip
+                scan_results["ports"].append({
+                    "port": port, 
+                    "service": service
+                    }) # For exporting to output file and
+                
                 result_box.config(state=NORMAL)
                 result_box.insert(END, f"✓ Port {port} is OPEN ({service.upper()})\n", "open")
-                result_box.config(state=DISABLED)
+                result_box.config(state=DISABLED)  
 
     # Stops timer
     end_time = time.time()
     duration = end_time - start_time
 
+    global scan_completed
+    scan_completed = True
+
     result_box.config(state=NORMAL)
     result_box.insert(END, f"\nScan complete in {duration:.2f} seconds. (っ◔◡◔)っ\n", "info")
     result_box.config(state=DISABLED)
-    global scan_completed
-    scan_completed = True
     save_button.config(state=NORMAL)
     start_button.config(state=NORMAL)
+
+
+def save_results_dialog():
+    format_type = simpledialog.askstring("Save As", "Enter file format (txt, csv, json):")
+
+    if format_type and format_type.lower() in ["txt", "csv", "json"]:
+        save_results(format_type.lower())
+    else:
+        messagebox.showerror("Invalid format", "Supported formats : 'txt', 'csv', 'json'")
+
+
+def save_results(format_type):
+    filetypes = {
+        "txt": [("Text file", "*.txt")],
+        "csv": [("CSV file", "*.csv")],
+        "json": [("JSON file", "*.json")]
+    }
+
+    ext = format_type.lower() # File Extension.
+    output = filedialog.asksaveasfilename(initialfile="output", defaultextension=f".{ext}", filetypes=filetypes[ext]) # The output file.(path)
+    if not output:
+        return 
     
-def save_results():
-    file_path = filedialog.asksaveasfilename(defaultextension=".txt",
-        filetypes=[
-            ("Text files", "*.txt")
-                   ]
-        
-    )
-    if file_path:
-        content = result_box.get("1.0", END)
-        try:
-            with open(file_path, "w", encoding="utf-8") as file:
-                file.write(content)
-            messagebox.showinfo("Saved", f"Results are saved to :\n{file_path}")
-        except Exception as e:
-            messagebox.showerror("Error", f"Could not save file:\n{e}")
+    try:
+        with open(output, "w", newline="") as f:
+            if ext == "txt":
+                f.write(f"Scan results for {scan_results['target']}\n")
+                for item in scan_results["ports"]:
+                    f.write(f"Port {item['port']} is OPEN ({item['service'].upper()})\n")
+            elif ext == "csv":
+                csvw = csv.writer(f) # CSVw writes in csv format.
+                csvw.writerow(["Target", "Port", "Service"])
+                for item in scan_results["ports"]:
+                    csvw.writerow([scan_results["target"], item["port"], item["service"]])
+            elif ext == "json":
+                json.dump(scan_results, f, indent=4) # Indent to make it look nice.
+        messagebox.showinfo("File Saved!", f"Output saved as {ext.upper()}")
+    except Exception as e:
+        messagebox.showerror("File could not be saved", str(e))
+
+                    
 # - GUI - #
 
 root = Tk()
@@ -157,7 +198,7 @@ button_frame.pack(pady=5, padx=10)
 start_button = Button(button_frame, width=20, height=2, state=NORMAL, text="Start Scan", borderwidth=0, bg="#1e1e1e", fg="white", font=("Lucida Console", 12, "bold"), command=start_scan)
 start_button.pack(side=RIGHT, padx=10)
 
-save_button = Button(button_frame, width=20, height=2, state=DISABLED, text="Save Results", borderwidth=0, bg="#1e1e1e", fg="white", font=("Lucida Console", 12, "bold"), command=save_results)
+save_button = Button(button_frame, width=20, height=2, state=DISABLED, text="Save Results", borderwidth=0, bg="#1e1e1e", fg="white", font=("Lucida Console", 12, "bold"), command=save_results_dialog)
 save_button.pack(side=RIGHT, padx=10)
 
 # Progress bar

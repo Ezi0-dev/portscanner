@@ -5,5 +5,8 @@ Use "portscannerold" if you dont want GUI<br />
 
 - [ ] **Add Logo.** 🔅 <br />
 - [ ] **Add UDP scanning.** 🔍 <br />
+- [ ] **Add Themes** 🖍 <br />
+- [ ] **Add Option to allow user to change threads through GUI** 🦾 <br />
 - [x] **Add Settings tab.** ⚙️ <br />
 - [x] **Add Output to txt file.** 📃 <br />
+- [x] **Added CSV and JSON output options.** 🗃 <br />
