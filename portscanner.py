@@ -7,17 +7,44 @@ from tkinter import *
 from tkinter import ttk, filedialog, messagebox, simpledialog
 from concurrent.futures import ThreadPoolExecutor, as_completed #Threads to make it scan ports faster.
 
+SETTINGS_F = "settings.json"
 scan_completed = False 
 scan_results = {
     "target": "", # Header for IP that was scanned.
     "ports" : []  # List of the ports
 }
 
+def init_settings():
+    default = {
+        "timeout": 0.5,
+        "max_threads": 300,
+        "default_ip": "",
+        "default_start_port": "",
+        "default_end_port": "",
+        "default_export_format": "txt"
+    }
+    if os.path.exists(SETTINGS_F):
+        try:
+            with open(SETTINGS_F, "r") as s:
+                data = json.load(s)
+                default.update(data)
+        except:
+            pass # Resets to default if error occurs.
+    return default
+
+def save_settings(settings):
+    try:
+        with open(SETTINGS_F, "w") as s:
+            json.dump(settings, s, indent=4)
+    except Exception as e:
+        messagebox.showerror("Could not save settings", str(e))
+
+
 
 def scan_port(ip, port): # Opens a socket -> Tries to connect to a specific port -> Prints if its open.
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # AF_INET = IPv4, SOCK_STREAM = TCP.
-        s.settimeout(0.5)
+        s.settimeout(settings["timeout"])
         result = s.connect_ex((ip, port)) # Tries to connect to the port.
         s.close()
 
@@ -73,7 +100,7 @@ def run_scan(ip, start_port, end_port):
     # Futures creates a list of tasks for the thread pool to do -> Loops through each port -> For each port tells worker to run scan_port(ip, port) -> executor.submit schedules the work.
     # Tasks are stored in the futures list
 
-    with ThreadPoolExecutor(max_workers=300) as executor : # with cleans up after its done
+    with ThreadPoolExecutor(max_workers=settings["max_threads"]) as executor : # with cleans up after its done
         futures = [executor.submit(scan_port, ip, port) for port in range (start_port, end_port + 1)]
 
         for future in as_completed(futures): # Waits for the tasks to finish 1 by 1 -> When done it gives us its future
@@ -128,7 +155,7 @@ def save_results(format_type):
     }
 
     ext = format_type.lower() # File Extension.
-    output = filedialog.asksaveasfilename(initialfile="output", defaultextension=f".{ext}", filetypes=filetypes[ext]) # The output file.(path)
+    output = filedialog.asksaveasfilename(initialfile="output", defaultextension=settings["default_export_format"], filetypes=filetypes[ext]) # The output file.(path)
     if not output:
         return 
     
@@ -152,6 +179,7 @@ def save_results(format_type):
                     
 # - GUI - #
 
+settings = init_settings()
 root = Tk()
 root.title("Ezi0 Port Scanner")
 root.geometry("500x500")
@@ -176,29 +204,35 @@ notebook.add(settings_tab, text="Settings")
 frame = Frame(scanner_tab)
 frame.pack(pady=10)
 
+
 ip_entry_label = Label(frame, text="Target IP:", font=("Lucida Console", 14, "bold"))
 ip_entry_label.grid(row=0, column=0, sticky=E)
 ip_entry = Entry(frame, bd=1, relief="solid", font=("Segoe UI", 10, "bold"))
 ip_entry.grid(row=0, column=1, padx=2, pady=2)
+ip_entry.insert(0, settings["default_ip"])
 
 start_port_label = Label(frame, text="Start Port:", font=("Lucida Console", 14, "bold"))
 start_port_label.grid(row=1, column=0, sticky=E)
 start_port_entry = Entry(frame, bd=1, relief="solid", font=("Segoe UI", 10, "bold"))
 start_port_entry.grid(row=1, column=1, padx=2, pady=2)
+start_port_entry.insert(0, str(settings["default_start_port"]))
 
 end_port_label = Label(frame, text="End Port:", font=("Lucida Console", 14, "bold"))
 end_port_label.grid(row=2, column=0, sticky=E)
 end_port_entry = Entry(frame, bd=1, relief="solid", font=("Segoe UI", 10, "bold"))
 end_port_entry.grid(row=2, column=1, padx=2, pady=2)
+end_port_entry.insert(0, str(settings["default_end_port"]))
 
 # Button -> Links button to start_scan and save_results
 button_frame = Frame(scanner_tab)
 button_frame.pack(pady=5, padx=10)
 
-start_button = Button(button_frame, width=20, height=2, state=NORMAL, text="Start Scan", borderwidth=0, bg="#1e1e1e", fg="white", font=("Lucida Console", 12, "bold"), command=start_scan)
+start_button = Button(button_frame, width=20, height=2, state=NORMAL, text="Start Scan",
+                       borderwidth=0, bg="#1e1e1e", fg="white", font=("Lucida Console", 12, "bold"), command=start_scan)
 start_button.pack(side=RIGHT, padx=10)
 
-save_button = Button(button_frame, width=20, height=2, state=DISABLED, text="Save Results", borderwidth=0, bg="#1e1e1e", fg="white", font=("Lucida Console", 12, "bold"), command=save_results_dialog)
+save_button = Button(button_frame, width=20, height=2, state=DISABLED, text="Save Results",
+                      borderwidth=0, bg="#1e1e1e", fg="white", font=("Lucida Console", 12, "bold"), command=save_results_dialog)
 save_button.pack(side=RIGHT, padx=10)
 
 # Progress bar
@@ -212,6 +246,54 @@ result_box.pack(pady=5, padx=10)
 # Text styling
 result_box.tag_config("open", foreground="#00ff00")
 result_box.tag_config("info", foreground="#6600ff")
+
+# - Settings GUI - #
+
+settings_frame = Frame(settings_tab)
+settings_frame.pack(pady=10, padx=10)
+
+def create_labeled_entry(parent, label_text, row, default_value):
+    label = Label(parent, text=label_text, font=("Segoe UI", 14))
+    label.grid(row=row, column=0, sticky=E, padx=5, pady=5)
+    entry = Entry(parent, bd=1, relief="solid", font=("Segoe UI", 14))
+    entry.grid(row=row, column=1, sticky=W, padx=5, pady=5)
+    entry.insert(0, str(default_value))
+    return entry
+
+timeout_entry = create_labeled_entry(settings_frame, "Timeout (sec):", 0, settings["timeout"])
+threads_entry = create_labeled_entry(settings_frame, "Max Threads:", 1, settings["max_threads"])
+default_ip_entry = create_labeled_entry(settings_frame, "Default IP:", 2, settings["default_ip"])
+default_start_port_entry = create_labeled_entry(settings_frame, "Default Start Port:", 3, settings["default_start_port"])
+default_end_port_entry = create_labeled_entry(settings_frame, "Default End Port:", 4, settings["default_end_port"])
+export_format_entry = create_labeled_entry(settings_frame, "Default Export Format:", 5, settings["default_export_format"])
+
+def upd_save_settings():
+    try:
+        settings["timeout"] = float(timeout_entry.get())
+        settings["max_threads"] = int(threads_entry.get())
+        settings["default_ip"] = default_ip_entry.get()
+        settings["default_start_port"] = int(default_start_port_entry.get())
+        settings["default_end_port"] = int(default_end_port_entry.get())
+        settings["default_export_format"] = export_format_entry.get().lower()
+
+        save_settings(settings)
+        
+        ip_entry.delete(0, END)
+        ip_entry.insert(0, settings["default_ip"])
+
+        start_port_entry.delete(0, END)
+        start_port_entry.insert(0, str(settings["default_start_port"]))
+
+        end_port_entry.delete(0, END)
+        end_port_entry.insert(0, str(settings["default_end_port"]))
+
+        messagebox.showinfo("Success", "Settings have been saved successfully")
+    except ValueError:
+        messagebox.showerror("Error", "Invalid input!")
+
+save_button_settings = Button(settings_tab, text="💾 Save Settings", command=upd_save_settings, width=20, height=2,
+                              borderwidth=0, bg="#1e1e1e", fg="white", font=("Lucida Console", 12, "bold"))
+save_button_settings.pack(pady=10)
 
 # Makes sure the code doesn't run in the background when closed.
 def on_closing():
