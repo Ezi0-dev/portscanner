@@ -14,6 +14,14 @@ scan_results = {
     "ports" : []  # List of the ports
 }
 
+def on_enter(e):
+    e.widget["bg"] = "#242424"  
+    e.widget["fg"] = "#4a0fac"  
+
+def on_leave(e):
+    e.widget["bg"] = "#1e1e1e"
+    e.widget["fg"] = "white"
+
 def init_settings():
     default = {
         "timeout": 0.5,
@@ -38,7 +46,6 @@ def save_settings(settings):
             json.dump(settings, s, indent=4)
     except Exception as e:
         messagebox.showerror("Could not save settings", str(e))
-
 
 
 def scan_port(ip, port): # Opens a socket -> Tries to connect to a specific port -> Prints if its open.
@@ -139,13 +146,41 @@ def run_scan(ip, start_port, end_port):
 
 
 def save_results_dialog():
-    format_type = simpledialog.askstring("Save As", "Enter file format (txt, csv, json):")
+    win = Toplevel(root)
+    win.title("Save As")
+    win.geometry("320x170")
+    win.resizable(False, False)
 
-    if format_type and format_type.lower() in ["txt", "csv", "json"]:
-        save_results(format_type.lower())
-    else:
-        messagebox.showerror("Invalid format", "Supported formats : 'txt', 'csv', 'json'")
+    try:
+        win.iconbitmap("save.ico") # In case the user does not have the icon, the code runs anyway :P
+    except:
+        pass
 
+    Label(win, text="Select export format:", font=("Lucida Console", 14, "bold")).pack(pady=10)
+
+    format_type = StringVar()
+    format_type.set(settings["default_export_format"]) # Selects the default.
+
+    formats = ["txt", "csv", "json"]
+    format_dropdown = ttk.Combobox(win, textvariable=format_type, values=formats, state="readonly")
+    format_dropdown.pack(pady=5)
+
+    remember_type = BooleanVar()
+    remember_check = Checkbutton(win, text="Remember", variable=remember_type, font=("Lucida Console", 14, "bold"))
+    remember_check.pack(pady=5)
+
+    def confirm_format():
+        active_format = format_type.get()
+        if active_format in formats:
+            if remember_type.get():
+                settings["default_export_format"] = active_format
+                save_settings(settings) # Saves to JSON
+            win.destroy()
+            save_results(active_format)
+        else:
+            messagebox.showerror("Invalid Format", "Please enter a valid format.")
+    
+    Button(win, text="Save", command=confirm_format, width=10, bg="#1e1e1e", fg="white", font=("Lucida Console", 10, "bold")).pack(pady=10)
 
 def save_results(format_type):
     filetypes = {
@@ -182,7 +217,7 @@ def save_results(format_type):
 settings = init_settings()
 root = Tk()
 root.title("Ezi0 Port Scanner")
-root.geometry("500x500")
+root.geometry("500x600")
 root.resizable(False, False)
 
 try :
@@ -202,24 +237,24 @@ notebook.add(settings_tab, text="Settings")
 
 # Inputs
 frame = Frame(scanner_tab)
-frame.pack(pady=10)
+frame.pack(pady=10, padx=10)
 
 
-ip_entry_label = Label(frame, text="Target IP:", font=("Lucida Console", 14, "bold"))
+ip_entry_label = Label(frame, text="Target IP : ", font=("Segoe UI", 14, "bold"))
 ip_entry_label.grid(row=0, column=0, sticky=E)
-ip_entry = Entry(frame, bd=1, relief="solid", font=("Segoe UI", 10, "bold"))
+ip_entry = Entry(frame, bd=1, borderwidth=2, relief="solid", font=("Segoe UI", 12))
 ip_entry.grid(row=0, column=1, padx=2, pady=2)
 ip_entry.insert(0, settings["default_ip"])
 
-start_port_label = Label(frame, text="Start Port:", font=("Lucida Console", 14, "bold"))
+start_port_label = Label(frame, text="Start Port : ", font=("Segoe UI", 14, "bold"))
 start_port_label.grid(row=1, column=0, sticky=E)
-start_port_entry = Entry(frame, bd=1, relief="solid", font=("Segoe UI", 10, "bold"))
+start_port_entry = Entry(frame, bd=1, borderwidth=2, relief="solid", font=("Segoe UI", 12))
 start_port_entry.grid(row=1, column=1, padx=2, pady=2)
 start_port_entry.insert(0, str(settings["default_start_port"]))
 
-end_port_label = Label(frame, text="End Port:", font=("Lucida Console", 14, "bold"))
+end_port_label = Label(frame, text="End Port : ", font=("Segoe UI", 14, "bold"))
 end_port_label.grid(row=2, column=0, sticky=E)
-end_port_entry = Entry(frame, bd=1, relief="solid", font=("Segoe UI", 10, "bold"))
+end_port_entry = Entry(frame, bd=1, borderwidth=2, relief="solid", font=("Segoe UI", 12))
 end_port_entry.grid(row=2, column=1, padx=2, pady=2)
 end_port_entry.insert(0, str(settings["default_end_port"]))
 
@@ -227,25 +262,31 @@ end_port_entry.insert(0, str(settings["default_end_port"]))
 button_frame = Frame(scanner_tab)
 button_frame.pack(pady=5, padx=10)
 
-start_button = Button(button_frame, width=20, height=2, state=NORMAL, text="Start Scan",
-                       borderwidth=0, bg="#1e1e1e", fg="white", font=("Lucida Console", 12, "bold"), command=start_scan)
+start_button = Button(button_frame, width=20, height=2, state=NORMAL, text="▶ Start Scan",
+                       borderwidth=0, bg="#1e1e1e", fg="white", font=("Segoe UI", 14, "bold"), command=start_scan)
 start_button.pack(side=RIGHT, padx=10)
 
-save_button = Button(button_frame, width=20, height=2, state=DISABLED, text="Save Results",
-                      borderwidth=0, bg="#1e1e1e", fg="white", font=("Lucida Console", 12, "bold"), command=save_results_dialog)
+save_button = Button(button_frame, width=20, height=2, state=DISABLED, text="✔ Save Results",
+                      borderwidth=0, bg="#1e1e1e", fg="white", font=("Segoe UI", 14, "bold"), command=save_results_dialog)
 save_button.pack(side=RIGHT, padx=10)
 
+start_button.bind("<Enter>", on_enter)
+start_button.bind("<Leave>", on_leave)
+
+save_button.bind("<Enter>", on_enter)
+save_button.bind("<Leave>", on_leave)
+
 # Progress bar
-progress_bar = ttk.Progressbar(scanner_tab, length=480)
+progress_bar = ttk.Progressbar(scanner_tab, length=490)
 progress_bar.pack(pady=5, padx=10)
 
 # Results box
-result_box = Text(scanner_tab, height=30, width=60, state=DISABLED, font=("Lucida Console", 12), bg="#1e1e1e", fg="#00ff00")
+result_box = Text(scanner_tab, height=30, width=60, state=DISABLED, font=("Lucida Console", 13), bg="#1e1e1e", fg="#00ff00")
 result_box.pack(pady=5, padx=10)
 
 # Text styling
 result_box.tag_config("open", foreground="#00ff00")
-result_box.tag_config("info", foreground="#6600ff")
+result_box.tag_config("info", font=("Segoe UI", 16), foreground="#4a0fac")
 
 # - Settings GUI - #
 
@@ -292,8 +333,10 @@ def upd_save_settings():
         messagebox.showerror("Error", "Invalid input!")
 
 save_button_settings = Button(settings_tab, text="💾 Save Settings", command=upd_save_settings, width=20, height=2,
-                              borderwidth=0, bg="#1e1e1e", fg="white", font=("Lucida Console", 12, "bold"))
+                              borderwidth=0, bg="#1e1e1e", fg="white", font=("Segoe UI", 12, "bold"))
 save_button_settings.pack(pady=10)
+save_button_settings.bind("<Enter>", on_enter)
+save_button_settings.bind("<Leave>", on_leave)
 
 # Makes sure the code doesn't run in the background when closed.
 def on_closing():
