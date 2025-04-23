@@ -8,7 +8,34 @@ from tkinter import ttk, filedialog, messagebox, simpledialog
 from concurrent.futures import ThreadPoolExecutor, as_completed #Threads to make it scan ports faster.
 
 SETTINGS_F = "settings.json"
+
+THEMES = {
+    "Dark": {
+        "bg": "#121212",
+        "fg": "#e0e0e0",
+        "button_bg": "#2d2d2d",
+        "button_fg": "#e0e0e0",
+        "entry_bg": "#1e1e1e",
+        "entry_fg": "#e0e0e0",
+        "highlight": "#00bcd4",
+        "result_fg": "#00ff88",
+        "info_fg": "#8c9eff",
+    },
+    "Light": {
+        "bg": "#f2f4f8",
+        "fg": "#333333",
+        "button_bg": "#007acc",
+        "button_fg": "#ffffff",
+        "entry_bg": "#ffffff",
+        "entry_fg": "#000000",
+        "highlight": "#005a9e",
+        "result_fg": "#2e7d32",
+        "info_fg": "#303f9f",
+    }
+}
+
 scan_completed = False 
+
 scan_results = {
     "target": "", # Header for IP that was scanned.
     "ports" : []  # List of the ports
@@ -29,7 +56,8 @@ def init_settings():
         "default_ip": "",
         "default_start_port": "",
         "default_end_port": "",
-        "default_export_format": "txt"
+        "default_export_format": "txt",
+        "default_theme": "Dark"
     }
     if os.path.exists(SETTINGS_F):
         try:
@@ -144,6 +172,7 @@ def run_scan(ip, start_port, end_port):
     save_button.config(state=NORMAL)
     start_button.config(state=NORMAL)
 
+formats = ["txt", "csv", "json"]
 
 def save_results_dialog():
     win = Toplevel(root)
@@ -161,7 +190,6 @@ def save_results_dialog():
     format_type = StringVar()
     format_type.set(settings["default_export_format"]) # Selects the default.
 
-    formats = ["txt", "csv", "json"]
     format_dropdown = ttk.Combobox(win, textvariable=format_type, values=formats, state="readonly")
     format_dropdown.pack(pady=5)
 
@@ -227,7 +255,7 @@ except:
 
 # Tabs
 notebook = ttk.Notebook(root)
-notebook.pack(fill="both", expand=True)
+notebook.pack(fill="both", expand=True, padx=5, pady=5)
 
 scanner_tab = Frame(notebook)
 notebook.add(scanner_tab, text="Scanner")
@@ -254,7 +282,7 @@ start_port_entry.insert(0, str(settings["default_start_port"]))
 
 end_port_label = Label(frame, text="End Port : ", font=("Segoe UI", 14, "bold"))
 end_port_label.grid(row=2, column=0, sticky=E)
-end_port_entry = Entry(frame, bd=1, borderwidth=2, relief="solid", font=("Segoe UI", 12))
+end_port_entry = Entry(frame, bd=1, borderwidth=2, font=("Segoe UI", 12))
 end_port_entry.grid(row=2, column=1, padx=2, pady=2)
 end_port_entry.insert(0, str(settings["default_end_port"]))
 
@@ -264,11 +292,11 @@ button_frame.pack(pady=5, padx=10)
 
 start_button = Button(button_frame, width=20, height=2, state=NORMAL, text="▶ Start Scan",
                        borderwidth=0, bg="#1e1e1e", fg="white", font=("Segoe UI", 14, "bold"), command=start_scan)
-start_button.pack(side=RIGHT, padx=10)
+start_button.pack(side=RIGHT, padx=(5, 0))
 
 save_button = Button(button_frame, width=20, height=2, state=DISABLED, text="✔ Save Results",
                       borderwidth=0, bg="#1e1e1e", fg="white", font=("Segoe UI", 14, "bold"), command=save_results_dialog)
-save_button.pack(side=RIGHT, padx=10)
+save_button.pack(side=RIGHT, padx=(0, 5))
 
 start_button.bind("<Enter>", on_enter)
 start_button.bind("<Leave>", on_leave)
@@ -293,12 +321,15 @@ result_box.tag_config("info", font=("Segoe UI", 16), foreground="#4a0fac")
 settings_frame = Frame(settings_tab)
 settings_frame.pack(pady=10, padx=10)
 
+label_widgets = [ip_entry_label, start_port_label, end_port_label]
+
 def create_labeled_entry(parent, label_text, row, default_value):
-    label = Label(parent, text=label_text, font=("Segoe UI", 14))
+    label = Label(parent, text=label_text, font=("Segoe UI", 16))
     label.grid(row=row, column=0, sticky=E, padx=5, pady=5)
-    entry = Entry(parent, bd=1, relief="solid", font=("Segoe UI", 14))
+    entry = Entry(parent, bd=1, relief="solid", font=("Segoe UI", 16))
     entry.grid(row=row, column=1, sticky=W, padx=5, pady=5)
     entry.insert(0, str(default_value))
+    label_widgets.append(label)
     return entry
 
 timeout_entry = create_labeled_entry(settings_frame, "Timeout (sec):", 0, settings["timeout"])
@@ -306,7 +337,11 @@ threads_entry = create_labeled_entry(settings_frame, "Max Threads:", 1, settings
 default_ip_entry = create_labeled_entry(settings_frame, "Default IP:", 2, settings["default_ip"])
 default_start_port_entry = create_labeled_entry(settings_frame, "Default Start Port:", 3, settings["default_start_port"])
 default_end_port_entry = create_labeled_entry(settings_frame, "Default End Port:", 4, settings["default_end_port"])
-export_format_entry = create_labeled_entry(settings_frame, "Default Export Format:", 5, settings["default_export_format"])
+
+export_format_var = StringVar()
+export_format_var.set(settings["default_export_format"])
+export_format_entry = ttk.Combobox(settings_frame, textvariable=export_format_var, values=formats, font=("Segoe UI", 16), state="readonly")
+export_format_entry.grid(column=1, sticky=E, padx=5, pady=5)
 
 def upd_save_settings():
     try:
@@ -325,18 +360,63 @@ def upd_save_settings():
         start_port_entry.delete(0, END)
         start_port_entry.insert(0, str(settings["default_start_port"]))
 
-        end_port_entry.delete(0, END)
+        end_port_entry.delete(0, END)    
         end_port_entry.insert(0, str(settings["default_end_port"]))
 
         messagebox.showinfo("Success", "Settings have been saved successfully")
     except ValueError:
         messagebox.showerror("Error", "Invalid input!")
 
-save_button_settings = Button(settings_tab, text="💾 Save Settings", command=upd_save_settings, width=20, height=2,
+save_settings_button = Button(settings_tab, text="💾 Save Settings", command=upd_save_settings, width=20, height=2,
                               borderwidth=0, bg="#1e1e1e", fg="white", font=("Segoe UI", 12, "bold"))
-save_button_settings.pack(pady=10)
-save_button_settings.bind("<Enter>", on_enter)
-save_button_settings.bind("<Leave>", on_leave)
+save_settings_button.pack(pady=10)
+save_settings_button.bind("<Enter>", on_enter)
+save_settings_button.bind("<Leave>", on_leave)
+
+# - Themes - #
+
+def set_theme(theme_name):
+    theme = THEMES[theme_name]
+    settings["default_theme"] = theme_name
+
+    root.config(bg=theme["bg"])
+    scanner_tab.config(bg=theme["bg"])
+    settings_tab.config(bg=theme["bg"])
+
+    style = ttk.Style()
+    style.theme_use("default")
+
+    style.configure("TCombobox", fieldbackground=theme["entry_bg"], background=theme["button_bg"], foreground=theme["entry_fg"])
+    style.configure("TButton", background=theme["button_bg"], foreground=theme["button_fg"], font=("Segoe UI", 10, "bold"))
+
+    style.map("TButton", background=[("active", theme["highlight"])])
+
+    style.configure("TNotebook", background=theme["bg"])
+    style.configure("TNotebook.Tab", background=theme["button_bg"], foreground=theme["fg"])
+    style.map("TNotebook.Tab", background=[("selected", theme["highlight"])])
+
+    style.configure("TProgressbar", background=theme["highlight"], troughcolor=theme["entry_bg"])
+
+    entry_widgets = [ip_entry, start_port_entry, end_port_entry, default_ip_entry, default_start_port_entry,
+                      default_end_port_entry, timeout_entry, threads_entry]
+
+    for entry in entry_widgets:
+        entry.config(
+        bg=theme["entry_bg"],
+        fg=theme["entry_fg"],
+        insertbackground=theme["highlight"],
+        relief="flat",
+        highlightthickness=1,
+        highlightbackground=theme["highlight"]
+        )
+
+    for label in label_widgets:
+        label.config(bg=theme["bg"], fg=theme["fg"])
+        frame.config(bg=theme["bg"])
+        settings_frame.config(bg=theme["bg"])
+
+    save_settings(settings)
+set_theme(settings["default_theme"])
 
 # Makes sure the code doesn't run in the background when closed.
 def on_closing():
