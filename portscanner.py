@@ -20,6 +20,7 @@ THEMES = {
         "highlight": "#00bcd4",
         "result_fg": "#00ff88",
         "info_fg": "#8c9eff",
+        "combobox_highlight": "#FF000000"
     },
     "Light": {
         "bg": "#f2f4f8",
@@ -31,6 +32,7 @@ THEMES = {
         "highlight": "#005a9e",
         "result_fg": "#2e7d32",
         "info_fg": "#303f9f",
+        "combobox_highlight": "#FF000000"
     }
 }
 
@@ -253,7 +255,56 @@ try :
 except:
     pass
 
+# - Themes - #
+
+def set_theme(theme_name):
+    theme = THEMES[theme_name]
+    settings["default_theme"] = theme_name
+
+    root.config(bg=theme["bg"])
+    scanner_tab.config(bg=theme["bg"])
+    settings_tab.config(bg=theme["bg"])
+    button_frame.config(bg=theme["bg"])
+
+    style = ttk.Style()
+    style.theme_use("default")
+
+    style.configure("TCombobox", fieldbackground=theme["entry_bg"], background=theme["entry_bg"], foreground=theme["entry_fg"], selectforeground=theme["fg"], selectbackground=theme["combobox_highlight"], insertbackground=theme["highlight"], relief="flat", highlightbackground=theme["highlight"])
+    style.configure("TButton", background=theme["button_bg"], foreground=theme["button_fg"], font=("Segoe UI", 10, "bold"))
+
+    style.map("TCombobox", fieldbackground=[('focus', theme["entry_bg"])], borderwidth=[('readonly', 0)], highlightbackground=[('focus', theme["highlight"])], highlightcolor=[('focus', theme["highlight"])], highlightthickness=[('focus', 1)])
+    style.map("TButton", background=[("active", theme["highlight"])])
+
+    style.configure("TNotebook", background=theme["bg"], borderwidth=0)
+    style.configure("TNotebook.Tab", background=theme["button_bg"], foreground=theme["fg"], borderwidth=0)
+    style.map("TNotebook.Tab", background=[("selected", theme["highlight"])])
+
+    style.configure("TProgressbar", background=theme["highlight"], borderwidth=0, troughcolor=theme["entry_bg"])
+
+    entry_widgets = [ip_entry, start_port_entry, end_port_entry, default_ip_entry, default_start_port_entry,
+                      default_end_port_entry, default_theme_entry, timeout_entry, threads_entry]
+
+    for entry in entry_widgets:
+        entry.config(
+        bg=theme["entry_bg"],
+        fg=theme["entry_fg"],
+        insertbackground=theme["highlight"],
+        relief="flat",
+        highlightthickness=1,
+        highlightbackground=theme["highlight"],
+        )
+
+    for label in label_widgets:
+        label.config(bg=theme["bg"], fg=theme["fg"])
+
+    frame.config(bg=theme["bg"], borderwidth=0)
+    settings_frame.config(bg=theme["bg"])
+    save_settings(settings)
+
+theme = THEMES[settings["default_theme"]]
+
 # Tabs
+
 notebook = ttk.Notebook(root)
 notebook.pack(fill="both", expand=True, padx=5, pady=5)
 
@@ -264,9 +315,11 @@ settings_tab = Frame(notebook)
 notebook.add(settings_tab, text="Settings")
 
 # Inputs
+
 frame = Frame(scanner_tab)
 frame.pack(pady=10, padx=10)
 
+# Entries
 
 ip_entry_label = Label(frame, text="Target IP : ", font=("Segoe UI", 14, "bold"))
 ip_entry_label.grid(row=0, column=0, sticky=E)
@@ -287,7 +340,8 @@ end_port_entry.grid(row=2, column=1, padx=2, pady=2)
 end_port_entry.insert(0, str(settings["default_end_port"]))
 
 # Button -> Links button to start_scan and save_results
-button_frame = Frame(scanner_tab)
+
+button_frame = Frame(scanner_tab, bg=theme["bg"])
 button_frame.pack(pady=5, padx=10)
 
 start_button = Button(button_frame, width=20, height=2, state=NORMAL, text="▶ Start Scan",
@@ -305,21 +359,24 @@ save_button.bind("<Enter>", on_enter)
 save_button.bind("<Leave>", on_leave)
 
 # Progress bar
+
 progress_bar = ttk.Progressbar(scanner_tab, length=490)
 progress_bar.pack(pady=5, padx=10)
 
 # Results box
-result_box = Text(scanner_tab, height=30, width=60, state=DISABLED, font=("Lucida Console", 13), bg="#1e1e1e", fg="#00ff00")
+
+result_box = Text(scanner_tab, height=30, width=60, state=DISABLED, borderwidth=0, font=("Lucida Console", 13), bg="#1e1e1e", fg="#00ff00")
 result_box.pack(pady=5, padx=10)
 
 # Text styling
+
 result_box.tag_config("open", foreground="#00ff00")
 result_box.tag_config("info", font=("Segoe UI", 16), foreground="#4a0fac")
 
 # - Settings GUI - #
 
 settings_frame = Frame(settings_tab)
-settings_frame.pack(pady=10, padx=10)
+settings_frame.pack(pady=20, padx=10)
 
 label_widgets = [ip_entry_label, start_port_label, end_port_label]
 
@@ -337,11 +394,15 @@ threads_entry = create_labeled_entry(settings_frame, "Max Threads:", 1, settings
 default_ip_entry = create_labeled_entry(settings_frame, "Default IP:", 2, settings["default_ip"])
 default_start_port_entry = create_labeled_entry(settings_frame, "Default Start Port:", 3, settings["default_start_port"])
 default_end_port_entry = create_labeled_entry(settings_frame, "Default End Port:", 4, settings["default_end_port"])
+default_theme_entry = create_labeled_entry(settings_frame, "Default Theme:", 5, settings["default_theme"])
 
-export_format_var = StringVar()
-export_format_var.set(settings["default_export_format"])
-export_format_entry = ttk.Combobox(settings_frame, textvariable=export_format_var, values=formats, font=("Segoe UI", 16), state="readonly")
-export_format_entry.grid(column=1, sticky=E, padx=5, pady=5)
+
+default_export_format_label = Label(settings_frame, text="Default export Format:", font=("Segoe UI", 16), bg=theme["bg"], fg=theme["fg"])
+default_export_format_label.grid(row=10, column=0, sticky=E, padx=5, pady=60)
+default_export_format_var = StringVar()
+default_export_format_var.set(settings["default_export_format"])
+default_export_format_entry = ttk.Combobox(settings_frame, textvariable=default_export_format_var, values=formats, font=("Segoe UI", 16), width=19, state="readonly")
+default_export_format_entry.grid(row=10, column=1, sticky=W, padx=5, pady=60, ipadx=1)
 
 def upd_save_settings():
     try:
@@ -350,7 +411,8 @@ def upd_save_settings():
         settings["default_ip"] = default_ip_entry.get()
         settings["default_start_port"] = int(default_start_port_entry.get())
         settings["default_end_port"] = int(default_end_port_entry.get())
-        settings["default_export_format"] = export_format_entry.get().lower()
+        settings["default_export_format"] = default_export_format_entry.get().lower()
+        settings["default_theme"] = default_theme_entry.get()
 
         save_settings(settings)
         
@@ -373,49 +435,6 @@ save_settings_button.pack(pady=10)
 save_settings_button.bind("<Enter>", on_enter)
 save_settings_button.bind("<Leave>", on_leave)
 
-# - Themes - #
-
-def set_theme(theme_name):
-    theme = THEMES[theme_name]
-    settings["default_theme"] = theme_name
-
-    root.config(bg=theme["bg"])
-    scanner_tab.config(bg=theme["bg"])
-    settings_tab.config(bg=theme["bg"])
-
-    style = ttk.Style()
-    style.theme_use("default")
-
-    style.configure("TCombobox", fieldbackground=theme["entry_bg"], background=theme["button_bg"], foreground=theme["entry_fg"])
-    style.configure("TButton", background=theme["button_bg"], foreground=theme["button_fg"], font=("Segoe UI", 10, "bold"))
-
-    style.map("TButton", background=[("active", theme["highlight"])])
-
-    style.configure("TNotebook", background=theme["bg"])
-    style.configure("TNotebook.Tab", background=theme["button_bg"], foreground=theme["fg"])
-    style.map("TNotebook.Tab", background=[("selected", theme["highlight"])])
-
-    style.configure("TProgressbar", background=theme["highlight"], troughcolor=theme["entry_bg"])
-
-    entry_widgets = [ip_entry, start_port_entry, end_port_entry, default_ip_entry, default_start_port_entry,
-                      default_end_port_entry, timeout_entry, threads_entry]
-
-    for entry in entry_widgets:
-        entry.config(
-        bg=theme["entry_bg"],
-        fg=theme["entry_fg"],
-        insertbackground=theme["highlight"],
-        relief="flat",
-        highlightthickness=1,
-        highlightbackground=theme["highlight"]
-        )
-
-    for label in label_widgets:
-        label.config(bg=theme["bg"], fg=theme["fg"])
-        frame.config(bg=theme["bg"])
-        settings_frame.config(bg=theme["bg"])
-
-    save_settings(settings)
 set_theme(settings["default_theme"])
 
 # Makes sure the code doesn't run in the background when closed.
