@@ -179,24 +179,25 @@ formats = ["txt", "csv", "json"]
 def save_results_dialog():
     win = Toplevel(root)
     win.title("Save As")
-    win.geometry("320x170")
+    win.geometry("380x220")
     win.resizable(False, False)
+    win.configure(bg=theme["bg"])
 
     try:
         win.iconbitmap("save.ico") # In case the user does not have the icon, the code runs anyway :P
     except:
         pass
 
-    Label(win, text="Select export format:", font=("Lucida Console", 14, "bold")).pack(pady=10)
+    Label(win, bg=theme["bg"], fg=theme["fg"], text="Select export format:", font=("Lucida Console", 16, "bold")).pack(pady=10)
 
     format_type = StringVar()
     format_type.set(settings["default_export_format"]) # Selects the default.
 
-    format_dropdown = ttk.Combobox(win, textvariable=format_type, values=formats, state="readonly")
+    format_dropdown = ttk.Combobox(win, textvariable=format_type, values=formats, font=("Segoe UI", 14), state="readonly")
     format_dropdown.pack(pady=5)
 
     remember_type = BooleanVar()
-    remember_check = Checkbutton(win, text="Remember", variable=remember_type, font=("Lucida Console", 14, "bold"))
+    remember_check = Checkbutton(win, text="Remember", font=("Lucida Console", 14, "bold"), variable=remember_type, bg=theme["bg"], fg=theme["fg"], activebackground=theme["bg"], activeforeground=theme["fg"], selectcolor=theme["entry_bg"])
     remember_check.pack(pady=5)
 
     def confirm_format():
@@ -210,8 +211,13 @@ def save_results_dialog():
         else:
             messagebox.showerror("Invalid Format", "Please enter a valid format.")
     
-    Button(win, text="Save", command=confirm_format, width=10, bg="#1e1e1e", fg="white", font=("Lucida Console", 10, "bold")).pack(pady=10)
+    save_dialog_button = Button(win, text="✔ Save", command=confirm_format, width=16, height=3, bg="#1e1e1e", fg="white", borderwidth=0, font=("Lucida Console", 13, "bold"))
+    save_dialog_button.pack(pady=5)
 
+    save_dialog_button.bind("<Enter>", lambda e: e.widget.config(bg="#242424", fg="#4a0fac"))
+    save_dialog_button.bind("<Leave>", lambda e: e.widget.config(bg="#1e1e1e", fg="white"))
+
+    
 def save_results(format_type):
     filetypes = {
         "txt": [("Text file", "*.txt")],
