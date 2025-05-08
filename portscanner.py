@@ -51,6 +51,10 @@ def on_leave(e):
     e.widget["bg"] = "#1e1e1e"
     e.widget["fg"] = "white"
 
+def hover_effect(widget):
+    widget.bind("<Enter>", on_enter)
+    widget.bind("<Leave>", on_leave)
+
 def init_settings():
     default = {
         "timeout": 0.5,
@@ -175,6 +179,7 @@ def run_scan(ip, start_port, end_port):
     start_button.config(state=NORMAL)
 
 formats = ["txt", "csv", "json"]
+themes = ["Light", "Dark"]
 
 def save_results_dialog():
     win = Toplevel(root)
@@ -213,6 +218,8 @@ def save_results_dialog():
     
     save_dialog_button = Button(win, text="✔ Save", command=confirm_format, width=16, height=3, bg="#1e1e1e", fg="white", borderwidth=0, font=("Lucida Console", 13, "bold"))
     save_dialog_button.pack(pady=5)
+
+    # Ugly for now
 
     save_dialog_button.bind("<Enter>", lambda e: e.widget.config(bg="#242424", fg="#4a0fac"))
     save_dialog_button.bind("<Leave>", lambda e: e.widget.config(bg="#1e1e1e", fg="white"))
@@ -288,7 +295,7 @@ def set_theme(theme_name):
     style.configure("TProgressbar", background=theme["highlight"], borderwidth=0, troughcolor=theme["entry_bg"])
 
     entry_widgets = [ip_entry, start_port_entry, end_port_entry, default_ip_entry, default_start_port_entry,
-                      default_end_port_entry, default_theme_entry, timeout_entry, threads_entry]
+                      default_end_port_entry, timeout_entry, threads_entry]
 
     for entry in entry_widgets:
         entry.config(
@@ -358,12 +365,6 @@ save_button = Button(button_frame, width=20, height=2, state=DISABLED, text="✔
                       borderwidth=0, bg="#1e1e1e", fg="white", font=("Segoe UI", 14, "bold"), command=save_results_dialog)
 save_button.pack(side=RIGHT, padx=(0, 5))
 
-start_button.bind("<Enter>", on_enter)
-start_button.bind("<Leave>", on_leave)
-
-save_button.bind("<Enter>", on_enter)
-save_button.bind("<Leave>", on_leave)
-
 # Progress bar
 
 progress_bar = ttk.Progressbar(scanner_tab, length=490)
@@ -384,7 +385,7 @@ result_box.tag_config("info", font=("Segoe UI", 16), foreground="#4a0fac")
 settings_frame = Frame(settings_tab)
 settings_frame.pack(pady=20, padx=10)
 
-label_widgets = [ip_entry_label, start_port_label, end_port_label]
+label_widgets = [ip_entry_label, start_port_label, end_port_label,]
 
 def create_labeled_entry(parent, label_text, row, default_value):
     label = Label(parent, text=label_text, font=("Segoe UI", 16))
@@ -398,17 +399,28 @@ def create_labeled_entry(parent, label_text, row, default_value):
 timeout_entry = create_labeled_entry(settings_frame, "Timeout (sec):", 0, settings["timeout"])
 threads_entry = create_labeled_entry(settings_frame, "Max Threads:", 1, settings["max_threads"])
 default_ip_entry = create_labeled_entry(settings_frame, "Default IP:", 2, settings["default_ip"])
-default_start_port_entry = create_labeled_entry(settings_frame, "Default Start Port:", 3, settings["default_start_port"])
-default_end_port_entry = create_labeled_entry(settings_frame, "Default End Port:", 4, settings["default_end_port"])
-default_theme_entry = create_labeled_entry(settings_frame, "Default Theme:", 5, settings["default_theme"])
+default_start_port_entry = create_labeled_entry(settings_frame, "Start Port:", 3, settings["default_start_port"])
+default_end_port_entry = create_labeled_entry(settings_frame, "End Port:", 4, settings["default_end_port"])
 
+# Dropdowns (ugly)
 
-default_export_format_label = Label(settings_frame, text="Default export Format:", font=("Segoe UI", 16), bg=theme["bg"], fg=theme["fg"])
-default_export_format_label.grid(row=10, column=0, sticky=E, padx=5, pady=60)
+default_theme_label = Label(settings_frame, text="Theme:", font=("Segoe UI", 16))
+default_theme_label.grid(row=10, column=0, sticky=E, padx=5, pady=5)
+default_theme_var = StringVar()
+default_theme_var.set(settings["default_theme"])
+default_theme_entry = ttk.Combobox(settings_frame, textvariable=default_theme_var, values=themes, font=("Segoe UI", 16), width=19, state="readonly")
+default_theme_entry.grid(row=10, column=1, sticky=W, padx=5, pady=5, ipadx=1)
+
+default_export_format_label = Label(settings_frame, text="Export Format:", font=("Segoe UI", 16))
+default_export_format_label.grid(row=9, column=0, sticky=E, padx=5, pady=(60, 0))
 default_export_format_var = StringVar()
 default_export_format_var.set(settings["default_export_format"])
 default_export_format_entry = ttk.Combobox(settings_frame, textvariable=default_export_format_var, values=formats, font=("Segoe UI", 16), width=19, state="readonly")
-default_export_format_entry.grid(row=10, column=1, sticky=W, padx=5, pady=60, ipadx=1)
+default_export_format_entry.grid(row=9, column=1, sticky=W, padx=5, pady=(60, 0), ipadx=1)
+
+label_widgets.extend([default_theme_label, default_export_format_label])
+
+# Save settings
 
 def upd_save_settings():
     try:
@@ -435,11 +447,18 @@ def upd_save_settings():
     except ValueError:
         messagebox.showerror("Error", "Invalid input!")
 
-save_settings_button = Button(settings_tab, text="💾 Save Settings", command=upd_save_settings, width=20, height=2,
+save_settings_button = Button(settings_tab, text="Save Settings", command=upd_save_settings, width=20, height=2,
                               borderwidth=0, bg="#1e1e1e", fg="white", font=("Segoe UI", 12, "bold"))
 save_settings_button.pack(pady=10)
-save_settings_button.bind("<Enter>", on_enter)
-save_settings_button.bind("<Leave>", on_leave)
+
+refresh_button = Button (settings_tab, text="Refresh Theme", command=lambda: set_theme(settings["default_theme"]), width=20, height=2,
+                              borderwidth=0, bg="#1e1e1e", fg="white", font=("Segoe UI", 12, "bold"))
+refresh_button.pack(pady=10)
+
+# Hover effect
+
+for btn in [save_button, start_button, refresh_button, save_settings_button]:
+    hover_effect(btn)
 
 set_theme(settings["default_theme"])
 
