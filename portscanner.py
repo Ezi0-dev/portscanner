@@ -13,31 +13,52 @@ THEMES = {
     "Dark": {
         "bg": "#121212",
         "fg": "#e0e0e0",
-        "button_bg": "#2d2d2d",
+        "button_bg": "#1e1e1e",
+        "notebook_bg": "#121212",
         "button_fg": "#e0e0e0",
         "entry_bg": "#1e1e1e",
         "entry_fg": "#e0e0e0",
         "highlight": "#4c1d7e",
-        "result_fg": "#00ff88",
-        "info_fg": "#8c9eff",
-        "combobox_highlight": "#FF000000"
+        "result_bg": "#1e1e1e",
+        "result_fg": "#00ff00",
+        "combobox_highlight": "#FF000000",
+        "button_hover_bg": "#242424",
+        "progress_bar": "#4c1d7e"
     },
     "Light": {
-        "bg": "#f2f4f8",
+        "bg": "white",
         "fg": "#333333",
-        "button_bg": "#007acc",
-        "button_fg": "#ffffff",
-        "entry_bg": "#ffffff",
+        "button_bg": "#e6e6e6",
+        "button_fg": "#333333",
+        "notebook_bg": "white",
+        "entry_bg": "#e6e6e6",
         "entry_fg": "#000000",
-        "highlight": "#005a9e",
-        "result_fg": "#2e7d32",
-        "info_fg": "#303f9f",
-        "combobox_highlight": "#FF000000"
+        "highlight": "#191919",
+        "result_bg": "#e6e6e6",
+        "result_fg": "#333333",
+        "combobox_highlight": "#FF000000",
+        "button_hover_bg": "#b8b8b8",
+        "progress_bar": "#00ff00"
+    },
+    "Cold": {
+        "bg": "#F4EEFF",
+        "fg": "#424874",
+        "button_bg": "#DCD6F7",
+        "button_fg": "#424874",
+        "notebook_bg": "#F4EEFF",
+        "entry_bg": "#DCD6F7",
+        "entry_fg": "#000000",
+        "highlight": "#A6B1E1",
+        "result_bg": "#DCD6F7",
+        "result_fg": "#424874",
+        "combobox_highlight": "#FF000000",
+        "button_hover_bg": "#b0abc6",
+        "progress_bar": "#A6B1E1"
     }
 }
 
 formats = ["txt", "csv", "json"]
-themes = ["Light", "Dark"]
+themes = ["Dark", "Light", "Cold"]
 save_dialog_frame = []
 label_widgets = []
 
@@ -47,18 +68,6 @@ scan_results = {
 }
 
 scan_completed = False 
-
-def on_enter(e):
-    e.widget["bg"] = "#242424"  
-    e.widget["fg"] = "#4a0fac"  
-
-def on_leave(e):
-    e.widget["bg"] = "#1e1e1e"
-    e.widget["fg"] = "white"
-
-def hover_effect(widget):
-    widget.bind("<Enter>", on_enter)
-    widget.bind("<Leave>", on_leave)
 
 def init_settings():
     default = {
@@ -184,12 +193,10 @@ def run_scan(ip, start_port, end_port):
     start_button.config(state=NORMAL)
 
 
-
 def save_results_dialog():
-    global win
     win = Toplevel(root)
     win.title("Save As")
-    win.geometry("380x220")
+    win.geometry("380x230")
     win.resizable(False, False)
     win.configure(bg=theme["bg"])
 
@@ -200,7 +207,8 @@ def save_results_dialog():
     except:
         pass
 
-    save_results_label = Label(win, bg=theme["bg"], fg=theme["fg"], text="Select export format:", font=("Segoe UI", 16, "bold")).pack(pady=10)
+    save_results_label = Label(win, bg=theme["bg"], fg=theme["fg"], text="Select export format:", font=("Segoe UI", 16, "bold"))
+    save_results_label.pack(pady=10)
 
     format_type = StringVar()
     format_type.set(settings["default_export_format"]) # Selects the default.
@@ -223,16 +231,14 @@ def save_results_dialog():
         else:
             messagebox.showerror("Invalid Format", "Please enter a valid format.")
     
-    save_dialog_button = Button(win, text="✔ Save", command=confirm_format, width=16, height=2, bg="#1e1e1e", fg="white", borderwidth=0, font=("Segoe UI", 13, "bold"))
-    save_dialog_button.pack(pady=5)
+    save_dialog_button = ttk.Button(win, text="✔ Save", command=confirm_format)
+    save_dialog_button.pack(pady=10, ipady=15, ipadx=35)
 
     # Ugly for now
 
-    save_dialog_button.bind("<Enter>", lambda e: e.widget.config(bg="#242424", fg="#4a0fac"))
-    save_dialog_button.bind("<Leave>", lambda e: e.widget.config(bg="#1e1e1e", fg="white"))
-
+    label_widgets.append(save_results_label)
+    label_widgets.append(remember_check)
     save_dialog_frame.append(results_window)
-    save_results_label.append(save_dialog_label)
 
     
 def save_results(format_type):
@@ -293,16 +299,16 @@ def set_theme(theme_name):
     style.theme_use("default")
 
     style.configure("TCombobox", fieldbackground=theme["entry_bg"], background=theme["entry_bg"], foreground=theme["entry_fg"], selectforeground=theme["fg"], selectbackground=theme["combobox_highlight"], insertbackground=theme["highlight"], relief="flat", highlightbackground=theme["highlight"])
-    style.configure("TButton", background=theme["button_bg"], foreground=theme["button_fg"], font=("Segoe UI", 10, "bold"))
+    style.configure("TButton", background=theme["button_bg"], focuscolor=theme["button_bg"], foreground=theme["button_fg"], borderwidth=0, font=("Segoe UI", 14, "bold"))
 
     style.map("TCombobox", fieldbackground=[('focus', theme["entry_bg"])], borderwidth=[('readonly', 0)], highlightbackground=[('focus', theme["highlight"])], highlightcolor=[('focus', theme["highlight"])], highlightthickness=[('focus', 1)])
-    style.map("TButton", background=[("active", theme["highlight"])])
+    style.map("TButton", background=[("active", theme["button_hover_bg"])])
 
-    style.configure("TNotebook", background=theme["bg"], borderwidth=0)
-    style.configure("TNotebook.Tab", background=theme["button_bg"], foreground=theme["fg"], borderwidth=0)
-    style.map("TNotebook.Tab", background=[("selected", theme["highlight"])])
+    style.configure("TNotebook", background=theme["bg"], focuscolor=theme["notebook_bg"], borderwidth=0)
+    style.configure("TNotebook.Tab", background=theme["notebook_bg"], font=("Segoe UI", 12), foreground=theme["fg"], borderwidth=0)
+    style.map("TNotebook.Tab", background=[("selected", theme["entry_bg"])])
 
-    style.configure("TProgressbar", background=theme["highlight"], borderwidth=0, troughcolor=theme["entry_bg"])
+    style.configure("TProgressbar", background=theme["progress_bar"], borderwidth=0, troughcolor=theme["button_bg"])
 
     entry_widgets = [ip_entry, start_port_entry, end_port_entry, default_ip_entry, default_start_port_entry,
                       default_end_port_entry, timeout_entry, threads_entry]
@@ -318,9 +324,16 @@ def set_theme(theme_name):
         )
 
     for label in label_widgets:
-        label.config(bg=theme["bg"], fg=theme["fg"])
+        if label.winfo_exists():
+            label.config(bg=theme["bg"], fg=theme["fg"])
 
+    for Toplevel in save_dialog_frame:
+        if Toplevel.winfo_exists():
+            Toplevel.configure(bg=theme["bg"], borderwidth=0)
+
+    result_box.config(bg=theme["result_bg"], fg=theme["result_fg"])
     frame.config(bg=theme["bg"], borderwidth=0)
+    result_box.tag_config("open", foreground=theme["result_fg"])
     settings_frame.config(bg=theme["bg"])
     save_settings(settings)
 
@@ -367,27 +380,24 @@ end_port_entry.insert(0, str(settings["default_end_port"]))
 button_frame = Frame(scanner_tab, bg=theme["bg"])
 button_frame.pack(pady=5, padx=10)
 
-start_button = Button(button_frame, width=25, height=2, state=NORMAL, text="▶ Start Scan",
-                       borderwidth=0, bg="#1e1e1e", fg="white", font=("Segoe UI", 14, "bold"), command=start_scan)
-start_button.pack(side=RIGHT, pady=5, padx=(5, 0))
+start_button = ttk.Button(button_frame, state=NORMAL, text="▶ Start Scan", command=start_scan)
+start_button.pack(side=RIGHT, ipady=15, ipadx=80, padx=(5, 0))
 
-save_button = Button(button_frame, width=25, height=2, state=DISABLED, text="✔ Save Results",
-                      borderwidth=0, bg="#1e1e1e", fg="white", font=("Segoe UI", 14, "bold"), command=save_results_dialog)
-save_button.pack(side=RIGHT, pady=5, padx=(0, 5))
+save_button = ttk.Button(button_frame, state=DISABLED, text="✔ Save Results", command=save_results_dialog)
+save_button.pack(side=LEFT, ipady=15, ipadx=80, padx=(0, 5))
 
 # Progress bar
 
 progress_bar = ttk.Progressbar(scanner_tab, length=570)
-progress_bar.pack(pady=5, padx=10)
+progress_bar.pack(pady=5, padx=10, ipady=5)
 
 # Results box
 
-result_box = Text(scanner_tab, height=30, width=60, state=DISABLED, borderwidth=0, font=("Lucida Console", 13), bg="#1e1e1e", fg="#00ff00")
+result_box = Text(scanner_tab, height=30, width=60, state=DISABLED, borderwidth=0, font=("Lucida Console", 15))
 result_box.pack(pady=5, padx=10)
 
 # Text styling
 
-result_box.tag_config("open", foreground="#00ff00")
 result_box.tag_config("info", font=("Segoe UI", 16), foreground="#4a0fac")
 
 # - Settings GUI - #
@@ -453,9 +463,8 @@ def upd_save_settings():
     except ValueError:
         messagebox.showerror("Error", "Invalid input!")
 
-save_settings_button = Button(settings_tab, text="Save Settings", command=upd_save_settings, width=20, height=2,
-                              borderwidth=0, bg="#1e1e1e", fg="white", font=("Segoe UI", 12, "bold"))
-save_settings_button.pack(pady=10)
+save_settings_button = ttk.Button(settings_tab, text="Save Settings", command=upd_save_settings)
+save_settings_button.pack(pady=10, ipady=20, ipadx=40)
 
 # Removed refresh button, this is way better :3
 
@@ -465,9 +474,6 @@ default_theme_entry.bind("<<ComboboxSelected>>", lambda e: set_theme(default_the
 
 for label in [ip_entry_label, start_port_label, end_port_label, default_theme_label, default_export_format_label]:
     label_widgets.append(label)
-
-for btn in [save_button, start_button, save_settings_button]:
-    hover_effect(btn)
 
 set_theme(settings["default_theme"])
 
