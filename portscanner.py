@@ -17,7 +17,7 @@ THEMES = {
         "button_fg": "#e0e0e0",
         "entry_bg": "#1e1e1e",
         "entry_fg": "#e0e0e0",
-        "highlight": "#00bcd4",
+        "highlight": "#4c1d7e",
         "result_fg": "#00ff88",
         "info_fg": "#8c9eff",
         "combobox_highlight": "#FF000000"
@@ -36,12 +36,17 @@ THEMES = {
     }
 }
 
-scan_completed = False 
+formats = ["txt", "csv", "json"]
+themes = ["Light", "Dark"]
+save_dialog_frame = []
+label_widgets = []
 
 scan_results = {
     "target": "", # Header for IP that was scanned.
     "ports" : []  # List of the ports
 }
+
+scan_completed = False 
 
 def on_enter(e):
     e.widget["bg"] = "#242424"  
@@ -178,22 +183,24 @@ def run_scan(ip, start_port, end_port):
     save_button.config(state=NORMAL)
     start_button.config(state=NORMAL)
 
-formats = ["txt", "csv", "json"]
-themes = ["Light", "Dark"]
+
 
 def save_results_dialog():
+    global win
     win = Toplevel(root)
     win.title("Save As")
     win.geometry("380x220")
     win.resizable(False, False)
     win.configure(bg=theme["bg"])
 
+    results_window = win
+
     try:
         win.iconbitmap("save.ico") # In case the user does not have the icon, the code runs anyway :P
     except:
         pass
 
-    Label(win, bg=theme["bg"], fg=theme["fg"], text="Select export format:", font=("Lucida Console", 16, "bold")).pack(pady=10)
+    save_results_label = Label(win, bg=theme["bg"], fg=theme["fg"], text="Select export format:", font=("Segoe UI", 16, "bold")).pack(pady=10)
 
     format_type = StringVar()
     format_type.set(settings["default_export_format"]) # Selects the default.
@@ -202,7 +209,7 @@ def save_results_dialog():
     format_dropdown.pack(pady=5)
 
     remember_type = BooleanVar()
-    remember_check = Checkbutton(win, text="Remember", font=("Lucida Console", 14, "bold"), variable=remember_type, bg=theme["bg"], fg=theme["fg"], activebackground=theme["bg"], activeforeground=theme["fg"], selectcolor=theme["entry_bg"])
+    remember_check = Checkbutton(win, text="Remember", font=("Segoe UI", 14, "bold"), variable=remember_type, bg=theme["bg"], fg=theme["fg"], activebackground=theme["bg"], activeforeground=theme["fg"], selectcolor=theme["entry_bg"])
     remember_check.pack(pady=5)
 
     def confirm_format():
@@ -216,13 +223,16 @@ def save_results_dialog():
         else:
             messagebox.showerror("Invalid Format", "Please enter a valid format.")
     
-    save_dialog_button = Button(win, text="✔ Save", command=confirm_format, width=16, height=3, bg="#1e1e1e", fg="white", borderwidth=0, font=("Lucida Console", 13, "bold"))
+    save_dialog_button = Button(win, text="✔ Save", command=confirm_format, width=16, height=2, bg="#1e1e1e", fg="white", borderwidth=0, font=("Segoe UI", 13, "bold"))
     save_dialog_button.pack(pady=5)
 
     # Ugly for now
 
     save_dialog_button.bind("<Enter>", lambda e: e.widget.config(bg="#242424", fg="#4a0fac"))
     save_dialog_button.bind("<Leave>", lambda e: e.widget.config(bg="#1e1e1e", fg="white"))
+
+    save_dialog_frame.append(results_window)
+    save_results_label.append(save_dialog_label)
 
     
 def save_results(format_type):
@@ -260,7 +270,7 @@ def save_results(format_type):
 settings = init_settings()
 root = Tk()
 root.title("Ezi0 Port Scanner")
-root.geometry("500x600")
+root.geometry("600x600")
 root.resizable(False, False)
 
 try :
@@ -357,17 +367,17 @@ end_port_entry.insert(0, str(settings["default_end_port"]))
 button_frame = Frame(scanner_tab, bg=theme["bg"])
 button_frame.pack(pady=5, padx=10)
 
-start_button = Button(button_frame, width=20, height=2, state=NORMAL, text="▶ Start Scan",
+start_button = Button(button_frame, width=25, height=2, state=NORMAL, text="▶ Start Scan",
                        borderwidth=0, bg="#1e1e1e", fg="white", font=("Segoe UI", 14, "bold"), command=start_scan)
-start_button.pack(side=RIGHT, padx=(5, 0))
+start_button.pack(side=RIGHT, pady=5, padx=(5, 0))
 
-save_button = Button(button_frame, width=20, height=2, state=DISABLED, text="✔ Save Results",
+save_button = Button(button_frame, width=25, height=2, state=DISABLED, text="✔ Save Results",
                       borderwidth=0, bg="#1e1e1e", fg="white", font=("Segoe UI", 14, "bold"), command=save_results_dialog)
-save_button.pack(side=RIGHT, padx=(0, 5))
+save_button.pack(side=RIGHT, pady=5, padx=(0, 5))
 
 # Progress bar
 
-progress_bar = ttk.Progressbar(scanner_tab, length=490)
+progress_bar = ttk.Progressbar(scanner_tab, length=570)
 progress_bar.pack(pady=5, padx=10)
 
 # Results box
@@ -384,8 +394,6 @@ result_box.tag_config("info", font=("Segoe UI", 16), foreground="#4a0fac")
 
 settings_frame = Frame(settings_tab)
 settings_frame.pack(pady=20, padx=10)
-
-label_widgets = [ip_entry_label, start_port_label, end_port_label,]
 
 def create_labeled_entry(parent, label_text, row, default_value):
     label = Label(parent, text=label_text, font=("Segoe UI", 16))
@@ -418,8 +426,6 @@ default_export_format_var.set(settings["default_export_format"])
 default_export_format_entry = ttk.Combobox(settings_frame, textvariable=default_export_format_var, values=formats, font=("Segoe UI", 16), width=19, state="readonly")
 default_export_format_entry.grid(row=9, column=1, sticky=W, padx=5, pady=(60, 0), ipadx=1)
 
-label_widgets.extend([default_theme_label, default_export_format_label])
-
 # Save settings
 
 def upd_save_settings():
@@ -451,13 +457,16 @@ save_settings_button = Button(settings_tab, text="Save Settings", command=upd_sa
                               borderwidth=0, bg="#1e1e1e", fg="white", font=("Segoe UI", 12, "bold"))
 save_settings_button.pack(pady=10)
 
-refresh_button = Button (settings_tab, text="Refresh Theme", command=lambda: set_theme(settings["default_theme"]), width=20, height=2,
-                              borderwidth=0, bg="#1e1e1e", fg="white", font=("Segoe UI", 12, "bold"))
-refresh_button.pack(pady=10)
+# Removed refresh button, this is way better :3
+
+default_theme_entry.bind("<<ComboboxSelected>>", lambda e: set_theme(default_theme_entry.get()))
 
 # Hover effect
 
-for btn in [save_button, start_button, refresh_button, save_settings_button]:
+for label in [ip_entry_label, start_port_label, end_port_label, default_theme_label, default_export_format_label]:
+    label_widgets.append(label)
+
+for btn in [save_button, start_button, save_settings_button]:
     hover_effect(btn)
 
 set_theme(settings["default_theme"])
