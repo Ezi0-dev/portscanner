@@ -5,6 +5,7 @@ import os
 import csv, json
 from tkinter import *
 from tkinter import ttk, filedialog, messagebox, simpledialog
+from tktooltip import ToolTip
 from concurrent.futures import ThreadPoolExecutor, as_completed #Threads to make it scan ports faster.
 
 SETTINGS_F = "settings.json"
@@ -57,9 +58,11 @@ THEMES = {
     }
 }
 
+methods = ["Socket", "Nmap"]
 formats = ["txt", "csv", "json"]
 themes = ["Dark", "Light", "Cold"]
 save_dialog_frame = []
+checkbutton_widgets = []
 label_widgets = []
 
 scan_results = {
@@ -225,7 +228,7 @@ def save_results_dialog():
         if active_format in formats:
             if remember_type.get():
                 settings["default_export_format"] = active_format
-                save_settings(settings) # Saves to JSON
+                save_settings(settings) # - Remembers and updates settings.json - #
             win.destroy()
             save_results(active_format)
         else:
@@ -237,7 +240,7 @@ def save_results_dialog():
     # Ugly for now
 
     label_widgets.append(save_results_label)
-    label_widgets.append(remember_check)
+    checkbutton_widgets.append(remember_check)
     save_dialog_frame.append(results_window)
 
     
@@ -294,6 +297,7 @@ def set_theme(theme_name):
     scanner_tab.config(bg=theme["bg"])
     settings_tab.config(bg=theme["bg"])
     button_frame.config(bg=theme["bg"])
+    nmap_tab.config(bg=theme["bg"])
 
     style = ttk.Style()
     style.theme_use("default")
@@ -305,13 +309,13 @@ def set_theme(theme_name):
     style.map("TButton", background=[("active", theme["button_hover_bg"])])
 
     style.configure("TNotebook", background=theme["bg"], focuscolor=theme["notebook_bg"], borderwidth=0)
-    style.configure("TNotebook.Tab", background=theme["notebook_bg"], font=("Segoe UI", 12), foreground=theme["fg"], borderwidth=0)
+    style.configure("TNotebook.Tab", background=theme["notebook_bg"], font=("Segoe UI", 11), foreground=theme["fg"], borderwidth=0)
     style.map("TNotebook.Tab", background=[("selected", theme["entry_bg"])])
 
     style.configure("TProgressbar", background=theme["progress_bar"], borderwidth=0, troughcolor=theme["button_bg"])
 
     entry_widgets = [ip_entry, start_port_entry, end_port_entry, default_ip_entry, default_start_port_entry,
-                      default_end_port_entry, timeout_entry, threads_entry]
+                      default_end_port_entry, timeout_entry, threads_entry, nmap_custom_args_entry]
 
     for entry in entry_widgets:
         entry.config(
@@ -322,6 +326,10 @@ def set_theme(theme_name):
         highlightthickness=1,
         highlightbackground=theme["highlight"],
         )
+
+    for checkbutton in checkbutton_widgets:
+        if checkbutton.winfo_exists():
+            checkbutton.config(bg=theme["bg"], fg=theme["fg"], activebackground=theme["bg"], activeforeground=theme["fg"], selectcolor=theme["entry_bg"])
 
     for label in label_widgets:
         if label.winfo_exists():
@@ -335,6 +343,7 @@ def set_theme(theme_name):
     frame.config(bg=theme["bg"], borderwidth=0)
     result_box.tag_config("open", foreground=theme["result_fg"])
     settings_frame.config(bg=theme["bg"])
+    nmap_settings_frame.config(bg=theme["bg"])
     save_settings(settings)
 
 theme = THEMES[settings["default_theme"]]
@@ -350,29 +359,49 @@ notebook.add(scanner_tab, text="Scanner")
 settings_tab = Frame(notebook)
 notebook.add(settings_tab, text="Settings")
 
-# Inputs
+nmap_tab = Frame(notebook)
+notebook.add(nmap_tab, text="Nmap Settings")
+
+# - Scanner tab - #
 
 frame = Frame(scanner_tab)
 frame.pack(pady=10, padx=10)
 
-# Entries
+
+# - Ugly and bad but works - #
+
+def disable_tab(event=None):
+    if scan_method_entry.get() == "Nmap":
+        notebook.tab(2, state=NORMAL)
+    else:
+        notebook.tab(2, state=DISABLED)
+
+scan_method_label = Label(frame, text="Scan Method", font=("Segoe UI", 14, "bold"))
+scan_method_label.grid(row=0, column=0, padx=73, sticky=E)
+ToolTip(scan_method_label, delay=1, msg="NOTE : Nmap must be installed and added to PATH in Windows in order to function")
+
+scan_method_entry = StringVar()
+scan_method_entry = ttk.Combobox(frame, values=methods, font=("Segoe UI", 16), width=15, state="readonly")
+scan_method_entry.grid(row=1, column=0, sticky=E, padx=45, ipadx=1)
+
+scan_method_entry.bind("<<ComboboxSelected>>", disable_tab)
 
 ip_entry_label = Label(frame, text="Target IP : ", font=("Segoe UI", 14, "bold"))
-ip_entry_label.grid(row=0, column=0, sticky=E)
+ip_entry_label.grid(row=0, column=1, sticky=E)
 ip_entry = Entry(frame, bd=1, borderwidth=2, relief="solid", font=("Segoe UI", 12))
-ip_entry.grid(row=0, column=1, padx=2, pady=2)
+ip_entry.grid(row=0, column=2, padx=2, pady=3)
 ip_entry.insert(0, settings["default_ip"])
 
 start_port_label = Label(frame, text="Start Port : ", font=("Segoe UI", 14, "bold"))
-start_port_label.grid(row=1, column=0, sticky=E)
+start_port_label.grid(row=1, column=1, sticky=E)
 start_port_entry = Entry(frame, bd=1, borderwidth=2, relief="solid", font=("Segoe UI", 12))
-start_port_entry.grid(row=1, column=1, padx=2, pady=2)
+start_port_entry.grid(row=1, column=2, padx=2, pady=3)
 start_port_entry.insert(0, str(settings["default_start_port"]))
 
 end_port_label = Label(frame, text="End Port : ", font=("Segoe UI", 14, "bold"))
-end_port_label.grid(row=2, column=0, sticky=E)
+end_port_label.grid(row=2, column=1, sticky=E)
 end_port_entry = Entry(frame, bd=1, borderwidth=2, font=("Segoe UI", 12))
-end_port_entry.grid(row=2, column=1, padx=2, pady=2)
+end_port_entry.grid(row=2, column=2, padx=2, pady=3)
 end_port_entry.insert(0, str(settings["default_end_port"]))
 
 # Button -> Links button to start_scan and save_results
@@ -386,24 +415,27 @@ start_button.pack(side=RIGHT, ipady=15, ipadx=80, padx=(5, 0))
 save_button = ttk.Button(button_frame, state=DISABLED, text="✔ Save Results", command=save_results_dialog)
 save_button.pack(side=LEFT, ipady=15, ipadx=80, padx=(0, 5))
 
-# Progress bar
+# - Progress bar - #
 
 progress_bar = ttk.Progressbar(scanner_tab, length=570)
 progress_bar.pack(pady=5, padx=10, ipady=5)
 
-# Results box
+# - Results box - #
 
 result_box = Text(scanner_tab, height=30, width=60, state=DISABLED, borderwidth=0, font=("Lucida Console", 15))
 result_box.pack(pady=5, padx=10)
 
-# Text styling
+# - Text styling - #
 
 result_box.tag_config("info", font=("Segoe UI", 16), foreground="#4a0fac")
 
-# - Settings GUI - #
+# - Settings Tab - #
 
 settings_frame = Frame(settings_tab)
 settings_frame.pack(pady=20, padx=10)
+
+settings_label = Label(settings_frame, text="Settings", font=("Segoe UI", 18, "bold"))
+settings_label.grid(row=0, column=0, columnspan=3, sticky='N', pady=(5, 10))
 
 def create_labeled_entry(parent, label_text, row, default_value):
     label = Label(parent, text=label_text, font=("Segoe UI", 16))
@@ -414,29 +446,63 @@ def create_labeled_entry(parent, label_text, row, default_value):
     label_widgets.append(label)
     return entry
 
-timeout_entry = create_labeled_entry(settings_frame, "Timeout (sec):", 0, settings["timeout"])
-threads_entry = create_labeled_entry(settings_frame, "Max Threads:", 1, settings["max_threads"])
-default_ip_entry = create_labeled_entry(settings_frame, "Default IP:", 2, settings["default_ip"])
-default_start_port_entry = create_labeled_entry(settings_frame, "Start Port:", 3, settings["default_start_port"])
-default_end_port_entry = create_labeled_entry(settings_frame, "End Port:", 4, settings["default_end_port"])
+timeout_entry = create_labeled_entry(settings_frame, "Timeout (sec):", 1, settings["timeout"])
+threads_entry = create_labeled_entry(settings_frame, "Max Threads:", 2, settings["max_threads"])
+default_ip_entry = create_labeled_entry(settings_frame, "Default IP:", 3, settings["default_ip"])
+default_start_port_entry = create_labeled_entry(settings_frame, "Start Port:", 4, settings["default_start_port"])
+default_end_port_entry = create_labeled_entry(settings_frame, "End Port:", 5, settings["default_end_port"])
 
-# Dropdowns (ugly)
+#  - Dropdowns (ugly) - #
 
 default_theme_label = Label(settings_frame, text="Theme:", font=("Segoe UI", 16))
-default_theme_label.grid(row=10, column=0, sticky=E, padx=5, pady=5)
+default_theme_label.grid(row=7, column=0, sticky=E, padx=5, pady=5)
 default_theme_var = StringVar()
 default_theme_var.set(settings["default_theme"])
 default_theme_entry = ttk.Combobox(settings_frame, textvariable=default_theme_var, values=themes, font=("Segoe UI", 16), width=19, state="readonly")
-default_theme_entry.grid(row=10, column=1, sticky=W, padx=5, pady=5, ipadx=1)
+default_theme_entry.grid(row=7, column=1, sticky=W, padx=5, pady=5, ipadx=1)
 
 default_export_format_label = Label(settings_frame, text="Export Format:", font=("Segoe UI", 16))
-default_export_format_label.grid(row=9, column=0, sticky=E, padx=5, pady=(60, 0))
+default_export_format_label.grid(row=6, column=0, sticky=E, padx=5, pady=(60, 0))
 default_export_format_var = StringVar()
 default_export_format_var.set(settings["default_export_format"])
 default_export_format_entry = ttk.Combobox(settings_frame, textvariable=default_export_format_var, values=formats, font=("Segoe UI", 16), width=19, state="readonly")
-default_export_format_entry.grid(row=9, column=1, sticky=W, padx=5, pady=(60, 0), ipadx=1)
+default_export_format_entry.grid(row=6, column=1, sticky=W, padx=5, pady=(60, 0), ipadx=1)
 
-# Save settings
+# - Nmap settings tab - #
+
+nmap_settings_frame = Frame(nmap_tab)
+nmap_settings_frame.pack(pady=20, padx=10)
+
+# - Variables to store options - #
+
+stealth_var = BooleanVar()
+os_detect_var = BooleanVar()
+version_var = BooleanVar()
+custom_args = StringVar()
+
+# - Widgets - #
+
+nmap_label = Label(nmap_settings_frame, text="Nmap Scan Options", font=("Segoe UI", 12, "bold"))
+nmap_label.pack(pady=5)
+
+steath_check =Checkbutton(nmap_settings_frame, text="Stealth Scan (-sS)", variable=stealth_var)
+steath_check.pack(anchor='w')
+os_check = Checkbutton(nmap_settings_frame, text="OS Detection (-O)", variable=os_detect_var)
+os_check.pack(anchor='w')
+ver_check = Checkbutton(nmap_settings_frame, text="Version Detection (-sV)", variable=version_var)
+ver_check.pack(anchor='w')
+
+checkbutton_widgets.extend([steath_check, os_check, ver_check])
+
+nmap_custom_args_label = Label(nmap_settings_frame, text="Custom Nmap Arguments:")
+nmap_custom_args_label.pack(anchor='w', pady=(10, 0))
+nmap_custom_args_entry = Entry(nmap_settings_frame, textvariable=custom_args, width=40)
+nmap_custom_args_entry.pack(anchor='w', padx=10)
+
+
+
+
+# - Save settings - #
 
 def upd_save_settings():
     try:
@@ -447,6 +513,7 @@ def upd_save_settings():
         settings["default_end_port"] = int(default_end_port_entry.get())
         settings["default_export_format"] = default_export_format_entry.get().lower()
         settings["default_theme"] = default_theme_entry.get()
+        settings["default_scan_method"] = scan_method_entry.get()
 
         save_settings(settings)
         
@@ -472,7 +539,8 @@ default_theme_entry.bind("<<ComboboxSelected>>", lambda e: set_theme(default_the
 
 # Hover effect
 
-for label in [ip_entry_label, start_port_label, end_port_label, default_theme_label, default_export_format_label]:
+for label in [ip_entry_label, start_port_label, end_port_label, default_theme_label, default_export_format_label, scan_method_label
+              ,nmap_label, nmap_custom_args_label, settings_label]:
     label_widgets.append(label)
 
 set_theme(settings["default_theme"])
