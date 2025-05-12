@@ -3,6 +3,7 @@ import time
 import threading
 import os
 import csv, json
+import subprocess
 from tkinter import *
 from tkinter import ttk, filedialog, messagebox, simpledialog
 from tktooltip import ToolTip
@@ -80,7 +81,8 @@ def init_settings():
         "default_start_port": "",
         "default_end_port": "",
         "default_export_format": "txt",
-        "default_theme": "Dark"
+        "default_theme": "Dark",
+        "default_scan_method": "Socket"
     }
     if os.path.exists(SETTINGS_F):
         try:
@@ -195,6 +197,47 @@ def run_scan(ip, start_port, end_port):
     save_button.config(state=NORMAL)
     start_button.config(state=NORMAL)
 
+# - Tied to the start button - #
+
+def scantype():
+    method = scan_method_entry_var.get()
+    if method == "Nmap":
+        run_nmap_scan()
+    else:
+        start_scan()
+        
+# - Nmap Integration - #
+
+def run_nmap_scan():
+    progress_bar.start()
+    global result_box
+    target = ip_entry.get()
+    command = ['nmap', target]
+
+    for key, var in checkbox_vars.items():
+        if var.get():
+            command.append(nmap_flags[key])
+
+    if custom_args.get():
+        command += custom_args.get().split()
+    
+    try:
+        result = subprocess.check_output(command, universal_newlines=True)
+        result_box.config(state=NORMAL, font=("Lucida Console", 10))
+        result_box.delete("1.0", END)
+        result_box.insert(END, result)
+        result_box.config(state=DISABLED)
+        progress_bar.stop()
+
+        global scan_completed
+        scan_completed = True
+        messagebox.showinfo("Scan Completed", "Nmap scan completed!")
+
+    except Exception as e:
+        progress_bar.start()
+        result_box.insert(END, f"Nmap error {e}")
+        progress_bar.stop()
+
 
 def save_results_dialog():
     win = Toplevel(root)
@@ -279,7 +322,7 @@ def save_results(format_type):
 settings = init_settings()
 root = Tk()
 root.title("Ezi0 Port Scanner")
-root.geometry("600x600")
+root.geometry("600x650")
 root.resizable(False, False)
 
 try :
@@ -373,16 +416,31 @@ frame.pack(pady=10, padx=10)
 def disable_tab(event=None):
     if scan_method_entry.get() == "Nmap":
         notebook.tab(2, state=NORMAL)
+        start_port_entry.grid_remove()
+        start_port_label.grid_remove()
+        end_port_entry.grid_remove()
+        end_port_label.grid_remove()
+        scan_method_entry.grid(pady=(0, 25))
+        ip_entry.grid(pady=10)
+
     else:
         notebook.tab(2, state=DISABLED)
+        start_port_entry.grid()
+        start_port_label.grid()
+        end_port_entry.grid()
+        end_port_label.grid()
+        scan_method_entry.grid(pady=3)
+        ip_entry.grid(pady=0)
 
 scan_method_label = Label(frame, text="Scan Method", font=("Segoe UI", 14, "bold"))
-scan_method_label.grid(row=0, column=0, padx=73, sticky=E)
+scan_method_label.grid(row=0, column=0, columnspan=1, padx=73, sticky=E)
 ToolTip(scan_method_label, delay=1, msg="NOTE : Nmap must be installed and added to PATH in Windows in order to function")
 
-scan_method_entry = StringVar()
-scan_method_entry = ttk.Combobox(frame, values=methods, font=("Segoe UI", 16), width=15, state="readonly")
+scan_method_entry_var = StringVar()
+scan_method_entry_var.set(settings["default_scan_method"])
+scan_method_entry = ttk.Combobox(frame, values=methods, textvariable=scan_method_entry_var, font=("Segoe UI", 16), width=15, state="readonly")
 scan_method_entry.grid(row=1, column=0, sticky=E, padx=45, ipadx=1)
+ToolTip(scan_method_entry, delay=1, msg="NOTE : Nmap must be installed and added to PATH in Windows in order to function")
 
 scan_method_entry.bind("<<ComboboxSelected>>", disable_tab)
 
@@ -409,7 +467,7 @@ end_port_entry.insert(0, str(settings["default_end_port"]))
 button_frame = Frame(scanner_tab, bg=theme["bg"])
 button_frame.pack(pady=5, padx=10)
 
-start_button = ttk.Button(button_frame, state=NORMAL, text="▶ Start Scan", command=start_scan)
+start_button = ttk.Button(button_frame, state=NORMAL, text="▶ Start Scan", command=scantype)
 start_button.pack(side=RIGHT, ipady=15, ipadx=80, padx=(5, 0))
 
 save_button = ttk.Button(button_frame, state=DISABLED, text="✔ Save Results", command=save_results_dialog)
@@ -422,8 +480,8 @@ progress_bar.pack(pady=5, padx=10, ipady=5)
 
 # - Results box - #
 
-result_box = Text(scanner_tab, height=30, width=60, state=DISABLED, borderwidth=0, font=("Lucida Console", 15))
-result_box.pack(pady=5, padx=10)
+result_box = Text(scanner_tab, height=30, width=90, state=DISABLED, borderwidth=0, font=("Lucida Console", 15))
+result_box.pack(pady=(5,10), padx=10)
 
 # - Text styling - #
 
@@ -478,25 +536,43 @@ nmap_settings_frame.pack(pady=20, padx=10)
 stealth_var = BooleanVar()
 os_detect_var = BooleanVar()
 version_var = BooleanVar()
+verbose_var = BooleanVar()
 custom_args = StringVar()
 
+# BooleanVars
+checkbox_vars = {
+    "stealth": stealth_var,
+    "os_detect": os_detect_var,
+    "version": version_var,
+    "verbose": verbose_var
+}
+
+# Matching flags
+nmap_flags = {
+    "stealth": "-sS",
+    "os_detect": "-O",
+    "version": "-sV",
+    "verbose": "-v"
+}
 # - Widgets - #
 
-nmap_label = Label(nmap_settings_frame, text="Nmap Scan Options", font=("Segoe UI", 12, "bold"))
+nmap_label = Label(nmap_settings_frame, text="Nmap Scan Options", font=("Segoe UI", 18, "bold"))
 nmap_label.pack(pady=5)
 
-steath_check =Checkbutton(nmap_settings_frame, text="Stealth Scan (-sS)", variable=stealth_var)
+steath_check =Checkbutton(nmap_settings_frame, font=("Segoe UI", 16), text="Stealth Scan (-sS)", variable=stealth_var)
 steath_check.pack(anchor='w')
-os_check = Checkbutton(nmap_settings_frame, text="OS Detection (-O)", variable=os_detect_var)
+os_check = Checkbutton(nmap_settings_frame, font=("Segoe UI", 16), text="OS Detection (-O)", variable=os_detect_var)
 os_check.pack(anchor='w')
-ver_check = Checkbutton(nmap_settings_frame, text="Version Detection (-sV)", variable=version_var)
+ver_check = Checkbutton(nmap_settings_frame, font=("Segoe UI", 16), text="Version Detection (-sV)", variable=version_var)
 ver_check.pack(anchor='w')
+verbose_check = Checkbutton(nmap_settings_frame, font=("Segoe UI", 16), text="Verbose Output (-v)", variable=verbose_var)
+verbose_check.pack(anchor='w')
 
-checkbutton_widgets.extend([steath_check, os_check, ver_check])
+checkbutton_widgets.extend([steath_check, os_check, ver_check, verbose_check])
 
-nmap_custom_args_label = Label(nmap_settings_frame, text="Custom Nmap Arguments:")
-nmap_custom_args_label.pack(anchor='w', pady=(10, 0))
-nmap_custom_args_entry = Entry(nmap_settings_frame, textvariable=custom_args, width=40)
+nmap_custom_args_label = Label(nmap_settings_frame, text="Custom Nmap Arguments:", font=("Segoe UI", 16))
+nmap_custom_args_label.pack(pady=(10, 0))
+nmap_custom_args_entry = Entry(nmap_settings_frame, textvariable=custom_args, width=40, font=("Segoe UI", 16))
 nmap_custom_args_entry.pack(anchor='w', padx=10)
 
 
@@ -543,6 +619,7 @@ for label in [ip_entry_label, start_port_label, end_port_label, default_theme_la
               ,nmap_label, nmap_custom_args_label, settings_label]:
     label_widgets.append(label)
 
+disable_tab()
 set_theme(settings["default_theme"])
 
 # Makes sure the code doesn't run in the background when closed.
