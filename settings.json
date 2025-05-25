@@ -1,0 +1,10 @@
+{
+    "timeout": 0.5,
+    "max_threads": 300,
+    "default_ip": "",
+    "default_start_port": "",
+    "default_end_port": "",
+    "default_export_format": "txt",
+    "default_theme": "Cold",
+    "default_scan_method": "Socket"
+}

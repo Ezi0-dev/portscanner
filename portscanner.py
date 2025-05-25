@@ -180,7 +180,7 @@ def run_scan(ip, start_port, end_port):
                     "service": service
                     }) # For exporting to output file and
                 
-                result_box.config(state=NORMAL)
+                result_box.config(state=NORMAL, font=("Lucida Console", 15))
                 result_box.insert(END, f"✓ Port {port} is OPEN ({service.upper()})\n", "open")
                 result_box.config(state=DISABLED)  
 
@@ -192,7 +192,7 @@ def run_scan(ip, start_port, end_port):
     scan_completed = True
 
     result_box.config(state=NORMAL)
-    result_box.insert(END, f"\nScan complete in {duration:.2f} seconds. (っ◔◡◔)っ\n", "info")
+    result_box.insert(END, f"\nScan completed in {duration:.2f} seconds. (っ◔◡◔)っ\n", "info")
     result_box.config(state=DISABLED)
     save_button.config(state=NORMAL)
     start_button.config(state=NORMAL)
@@ -202,7 +202,7 @@ def run_scan(ip, start_port, end_port):
 def scantype():
     method = scan_method_entry_var.get()
     if method == "Nmap":
-        run_nmap_scan()
+        start_nmap_scan()
     else:
         start_scan()
         
@@ -234,10 +234,58 @@ def run_nmap_scan():
         messagebox.showinfo("Scan Completed", "Nmap scan completed!")
 
     except Exception as e:
-        progress_bar.start()
         result_box.insert(END, f"Nmap error {e}")
-        progress_bar.stop()
 
+
+def start_nmap_scan():
+    progress_bar.start()
+    progress_bar.config(mode='indeterminate')
+    thread = threading.Thread(target=run_nmap_scan_thread)
+    thread.start()
+
+
+def show_nmap_result(result):
+    global result_box
+    result_box.config(state=NORMAL, font=("Lucida Console", 10))
+    result_box.delete("1.0", END)
+    result_box.insert(END, result)
+
+
+    result_box.insert(END, f"\nScan completed. (っ◔◡◔)っ\n", "info")
+    result_box.config(state=DISABLED)
+    result_box.update_idletasks()
+    messagebox.showinfo("Scan Completed", "Nmap scan finished.")
+
+
+def run_nmap_scan_thread():
+    progress_bar.start()
+    global result_box
+    target = ip_entry.get()
+    command = ['nmap', target]
+
+    for key, var in checkbox_vars.items():
+        if var.get():
+            command.append(nmap_flags[key])
+
+    if custom_args.get():
+        command += custom_args.get().split()
+    
+    try:
+        result = subprocess.check_output(command, universal_newlines=True)
+        
+        progress_bar.config(mode='determinate')
+        root.after(0, lambda: show_nmap_result(result))
+
+        global scan_completed
+        scan_completed = True
+
+    except Exception as e:
+        root.after(0, lambda: show_nmap_result(f"Error: {e}"))
+
+    finally:
+        root.after(0, progress_bar.stop)
+
+------------------------------
 
 def save_results_dialog():
     win = Toplevel(root)
@@ -249,7 +297,7 @@ def save_results_dialog():
     results_window = win
 
     try:
-        win.iconbitmap("save.ico") # In case the user does not have the icon, the code runs anyway :P
+        win.iconbitmap("assets/save.ico") # In case the user does not have the icon, the code runs anyway :P
     except:
         pass
 
@@ -326,7 +374,7 @@ root.geometry("600x650")
 root.resizable(False, False)
 
 try :
-    root.iconbitmap("icon.ico")
+    root.iconbitmap("assets/icon.ico")
 except:
     pass
 
@@ -420,8 +468,6 @@ def disable_tab(event=None):
         start_port_label.grid_remove()
         end_port_entry.grid_remove()
         end_port_label.grid_remove()
-        scan_method_entry.grid(pady=(0, 25))
-        ip_entry.grid(pady=10)
 
     else:
         notebook.tab(2, state=DISABLED)
@@ -429,8 +475,6 @@ def disable_tab(event=None):
         start_port_label.grid()
         end_port_entry.grid()
         end_port_label.grid()
-        scan_method_entry.grid(pady=3)
-        ip_entry.grid(pady=0)
 
 scan_method_label = Label(frame, text="Scan Method", font=("Segoe UI", 14, "bold"))
 scan_method_label.grid(row=0, column=0, columnspan=1, padx=73, sticky=E)
@@ -480,7 +524,7 @@ progress_bar.pack(pady=5, padx=10, ipady=5)
 
 # - Results box - #
 
-result_box = Text(scanner_tab, height=30, width=90, state=DISABLED, borderwidth=0, font=("Lucida Console", 15))
+result_box = Text(scanner_tab, height=40, width=90, state=DISABLED, borderwidth=0, font=("Lucida Console", 15))
 result_box.pack(pady=(5,10), padx=10)
 
 # - Text styling - #
@@ -509,6 +553,8 @@ threads_entry = create_labeled_entry(settings_frame, "Max Threads:", 2, settings
 default_ip_entry = create_labeled_entry(settings_frame, "Default IP:", 3, settings["default_ip"])
 default_start_port_entry = create_labeled_entry(settings_frame, "Start Port:", 4, settings["default_start_port"])
 default_end_port_entry = create_labeled_entry(settings_frame, "End Port:", 5, settings["default_end_port"])
+
+ToolTip(threads_entry, msg="NOTE : Only affects Socket scanning.")
 
 #  - Dropdowns (ugly) - #
 
