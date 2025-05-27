@@ -96,8 +96,7 @@ def run_scan(ip, start_port, end_port):
 
 # - Tied to the start button - #
 
-def scantype():
-    method = scan_method_entry_var.get()
+def scantype(method):
     if method == "Nmap":
         start_nmap_scan()
     else:
