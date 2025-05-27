@@ -1,35 +1,12 @@
-import tkinter as tk
-from tkinter import ttk
-
-from ui.gui import build_gui  # This returns the GUI elements
-from core.settings import init_settings
-from core.themes import set_theme
-from core.scanner import run_scan, run_nmap_scan
-
-
+from ui.gui import build_gui
+from ui.themes import set_theme
+from ui.settings import init_settings
 
 def main():
-    root = tk.Tk()
-    root.title("Port Scanner")
-    root.geometry("800x600")
-
+    ui = build_gui()
     settings = init_settings()
-    set_theme(root, settings.get("theme", "dark"))
-
-    widgets = build_gui(root)
-
-    def on_scan_click():
-        target = widgets['ip_entry'].get()
-        scan_type = widgets['scan_type'].get()
-
-        if scan_type == "Nmap":
-            run_nmap_scan(target, widgets)
-        else:
-            run_scan(target, widgets)
-
-    widgets['scan_button'].configure(command=on_scan_click)
-
-    root.mainloop()
+    set_theme(settings["default_theme"], ui["root"], ui["tabs"], ui["frames"])
+    ui["root"].mainloop()
 
 if __name__ == "__main__":
     main()

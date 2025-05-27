@@ -1,3 +1,5 @@
+from tkinter import *
+
 SETTINGS_F = "../settings.json"
 
 methods = ["Socket", "Nmap"]

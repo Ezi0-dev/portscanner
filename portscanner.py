@@ -285,8 +285,6 @@ def run_nmap_scan_thread():
     finally:
         root.after(0, progress_bar.stop)
 
-------------------------------
-
 def save_results_dialog():
     win = Toplevel(root)
     win.title("Save As")
