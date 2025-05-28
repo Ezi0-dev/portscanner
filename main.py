@@ -4,10 +4,10 @@ from ui.settings import init_settings
 
 def main():
     settings = init_settings()
-    ui = build_gui(settings)
+    ui_elements = build_gui(settings)
 
-    set_theme(settings["default_theme"], ui["root"], ui["notebook"], ui["tabs"], ui["frames"], ui["widgets"])
-    ui["root"].mainloop()
+    set_theme(settings["default_theme"], ui_elements, settings)
+    ui_elements["root"].mainloop()
 
 if __name__ == "__main__":
     main()
