@@ -48,7 +48,6 @@ THEMES = {
     }
 }
 
-
 # - Themes - #
 
 from ui.settings import save_settings

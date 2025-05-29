@@ -6,7 +6,6 @@ scan_methods = ["Socket", "Nmap"]
 formats = ["txt", "csv", "json"]
 themes = ["Dark", "Light", "Cold"]
 
-
 nmap_flag_keys = ["stealth", "os_detect", "version", "verbose"]
 
 # Matching flags
@@ -28,4 +27,3 @@ def init_checkbox_vars():
 
 def init_custom_args():
     return StringVar()
-

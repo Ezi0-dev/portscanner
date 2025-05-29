@@ -1,3 +1,18 @@
+import threading
+import socket
+import time
+import os
+import subprocess
+from concurrent.futures import ThreadPoolExecutor, as_completed #Threads to make it scan ports faster.
+from ui.settings import init_settings
+
+scan_results = {
+    "target": "", # Header for IP that was scanned.
+    "ports" : []  # List of the ports
+}
+
+settings = init_settings()
+
 def scan_port(ip, port): # Opens a socket -> Tries to connect to a specific port -> Prints if its open.
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # AF_INET = IPv4, SOCK_STREAM = TCP.
@@ -15,43 +30,29 @@ def scan_port(ip, port): # Opens a socket -> Tries to connect to a specific port
         return None
 
 
-def start_scan():
-    ip = ip_entry.get()
-    try:
-        start_port = int(start_port_entry.get())
-        end_port = int(end_port_entry.get())
-    except ValueError:
-        messagebox.showerror("Input error", "Ports have to be numbers.")
-        return
-    
+def start_scan(ip, start_port, end_port, on_progress=None, on_complete=None, on_error=None, on_update_progress=None):
     if start_port > end_port:
-        messagebox.showerror("Input error", "Start port must be less than end port")
+        on_error("Input error", "Start port must be less than end port")
         return
     
-    # Empty the result-box.
-    result_box.config(state=NORMAL)
-    result_box.delete(1.0, END)
-    result_box.insert(END, f"Scanning {ip} from port {start_port} to {end_port}...\n")
-    result_box.config(state=DISABLED)
     global scan_completed
     scan_completed = False
-    save_button.config(state=DISABLED)
-    start_button.config(state=DISABLED)
 
-    # Start scanning with threads.
-    thread = threading.Thread(target=run_scan, args=(ip, start_port, end_port))
-    thread.start()
+    on_progress(f"Scanning {ip} from port {start_port} to {end_port}...\n")
+    try: 
+        thread = threading.Thread(target=run_scan, args=(ip, start_port, end_port, on_progress, on_complete, on_error, on_update_progress))
+        thread.start()
+        scan_completed = True
+
+    except Exception as e:
+        on_error("Scan error", str(e))
 
 
-def run_scan(ip, start_port, end_port):
+def run_scan(ip, start_port, end_port, on_progress=None, on_complete=None, on_error=None, on_update_progress=None):
     start_time = time.time()
     total_ports = end_port - start_port + 1
     scanned = 0
-
     open_ports = []
-
-    progress_bar["maximum"] = total_ports
-    progress_bar["value"] = 0
 
     # Limited amount of threads for stability for weaker systems - feel free to change to whatever you wish. 
     # Futures creates a list of tasks for the thread pool to do -> Loops through each port -> For each port tells worker to run scan_port(ip, port) -> executor.submit schedules the work.
@@ -63,10 +64,12 @@ def run_scan(ip, start_port, end_port):
         for future in as_completed(futures): # Waits for the tasks to finish 1 by 1 -> When done it gives us its future
             result = future.result()         # Result gets the acutal return value from the function itself -> if open (80, http) if closed None.
             scanned += 1                     # Keeps track of ports scanned
-            progress_bar ["value"] = scanned # Updates progress-bar
 
             # If result is not None then the port is open -> Gets port and the service name -> Makes result box editable -> Prints the port info -> Locks result box again.
 
+            if on_update_progress:
+                on_update_progress(scanned, total_ports)
+            
             if result:
                 port, service = result
                 open_ports.append((port, service))
@@ -75,11 +78,10 @@ def run_scan(ip, start_port, end_port):
                 scan_results["ports"].append({
                     "port": port, 
                     "service": service
-                    }) # For exporting to output file and
+                    }) # For exporting to output file 
                 
-                result_box.config(state=NORMAL, font=("Lucida Console", 15))
-                result_box.insert(END, f"✓ Port {port} is OPEN ({service.upper()})\n", "open")
-                result_box.config(state=DISABLED)  
+                on_progress(f"✓ Port {port} is OPEN ({service.upper()})\n", "open")
+                
 
     # Stops timer
     end_time = time.time()
@@ -88,19 +90,15 @@ def run_scan(ip, start_port, end_port):
     global scan_completed
     scan_completed = True
 
-    result_box.config(state=NORMAL)
-    result_box.insert(END, f"\nScan completed in {duration:.2f} seconds. (っ◔◡◔)っ\n", "info")
-    result_box.config(state=DISABLED)
-    save_button.config(state=NORMAL)
-    start_button.config(state=NORMAL)
+    on_complete(f"\nScan completed in {duration:.2f} seconds. (っ◔◡◔)っ\n", "info")
 
 # - Tied to the start button - #
 
-def scantype(method):
-    if method == "Nmap":
-        start_nmap_scan()
-    else:
-        start_scan()
+## def scantype(method):
+##    if method == "Nmap":
+##       start_nmap_scan()
+##    else:
+##        start_scan()
         
 # - Nmap Integration - #
 

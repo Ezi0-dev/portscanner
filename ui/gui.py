@@ -1,10 +1,11 @@
 from tkinter import *
 from tkinter import ttk, filedialog, messagebox, simpledialog
 from core.config import scan_methods, nmap_flag_keys, themes, formats
-from core.scanner import scantype
+from core.scanner import start_scan, start_nmap_scan
 from core.export import save_results_dialog
 import os
 from tktooltip import ToolTip
+
 
 def build_gui(settings):
     root = Tk()
@@ -38,8 +39,9 @@ def build_gui(settings):
     except:
         pass
 
+    scan_completed = False
 
-    # Tabs
+    # - Tabs - #
 
     notebook = ttk.Notebook(root)
     notebook.pack(fill="both", expand=True, padx=5, pady=5)
@@ -91,7 +93,53 @@ def build_gui(settings):
     button_frame = Frame(scanner_tab)
     button_frame.pack(pady=5, padx=10)
 
-    method = scan_method_entry_var.get()
+    # - Start button function - #
+
+    def scantype():
+        method = scan_method_entry_var.get()
+        result_box.config(state=NORMAL)
+        result_box.delete(1.0, END)
+        result_box.config(state=DISABLED)
+        
+        if method == "Nmap":
+            start_nmap_scan()
+        else:
+            try:
+                ip = ip_entry.get()
+                start_port = int(start_port_entry.get())
+                end_port = int(end_port_entry.get())
+            except ValueError:
+                messagebox.showerror("Input error", "Ports must be numbers.")
+                return
+            
+            def update_result_box(msg):
+                result_box.config(state=NORMAL)
+                result_box.insert(END, msg)
+                result_box.config(state=DISABLED)
+            
+            def update_progress(scanned, total):
+                progress_bar["maximum"] = total
+                progress_bar["value"] = scanned
+            
+            def on_complete(msg):
+                result_box.tag_config("info", font=("Segoe UI", 16), foreground="#4a0fac")
+                result_box.config(state=NORMAL)
+                result_box.insert(END, msg, "info")
+                result_box.config(state=DISABLED)
+                save_button.config(state=NORMAL)
+                start_button.config(state=NORMAL)
+            
+            start_scan(
+                ip,
+                start_port,
+                end_port,
+                on_progress=lambda msg, tag=None: update_result_box(msg),
+                on_complete=lambda msg, tag=None: on_complete(msg),
+                on_error=lambda title, msg: messagebox.showerror(title, msg),
+                on_update_progress=lambda scanned, total: update_progress(scanned, total)
+            )
+            
+
     start_button = ttk.Button(button_frame, state=NORMAL, text="▶ Start Scan", command=scantype)
     start_button.pack(side=RIGHT, ipady=15, ipadx=80, padx=(5, 0))
 
@@ -108,11 +156,6 @@ def build_gui(settings):
     result_box = Text(scanner_tab, height=40, width=90, state=DISABLED, borderwidth=0, font=("Lucida Console", 15))
     result_box.pack(pady=(5,10), padx=10)
     ui_elements["text_widgets"].append(result_box)
-    
-
-    # - Text styling - #
-
-    result_box.tag_config("info", font=("Segoe UI", 16), foreground="#4a0fac")
 
     # - Settings Tab - #
 
@@ -121,6 +164,8 @@ def build_gui(settings):
 
     settings_label = Label(settings_frame, text="Settings", font=("Segoe UI", 18, "bold"))
     settings_label.grid(row=0, column=0, columnspan=3, sticky='N', pady=(5, 10))
+
+    # - Only creates settings for now - #
 
     def create_labeled_entry(parent, label_text, row, default_value, ui_elements):
         label = Label(parent, text=label_text, font=("Segoe UI", 16))
