@@ -107,7 +107,6 @@ def set_theme(theme_name, ui_elements, settings):
     save_settings(settings)
 
 
-
 def set_themexz(theme_name):
     theme = THEMES[theme_name]
     settings["default_theme"] = theme_name

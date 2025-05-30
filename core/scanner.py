@@ -5,11 +5,7 @@ import os
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed #Threads to make it scan ports faster.
 from ui.settings import init_settings
-
-scan_results = {
-    "target": "", # Header for IP that was scanned.
-    "ports" : []  # List of the ports
-}
+import core.config
 
 settings = init_settings()
 
@@ -74,8 +70,8 @@ def run_scan(ip, start_port, end_port, on_progress=None, on_complete=None, on_er
                 port, service = result
                 open_ports.append((port, service))
 
-                scan_results["target"] = ip
-                scan_results["ports"].append({
+                core.config.scan_results["target"] = ip
+                core.config.scan_results["ports"].append({
                     "port": port, 
                     "service": service
                     }) # For exporting to output file 

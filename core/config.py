@@ -6,6 +6,11 @@ scan_methods = ["Socket", "Nmap"]
 formats = ["txt", "csv", "json"]
 themes = ["Dark", "Light", "Cold"]
 
+scan_results = {
+    "target": "", # Header for IP that was scanned.
+    "ports" : []  # List of the ports
+}
+
 nmap_flag_keys = ["stealth", "os_detect", "version", "verbose"]
 
 # Matching flags

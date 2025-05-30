@@ -3,8 +3,11 @@ from tkinter import ttk, filedialog, messagebox, simpledialog
 from core.config import scan_methods, nmap_flag_keys, themes, formats
 from core.scanner import start_scan, start_nmap_scan
 from core.export import save_results_dialog
+from ui.themes import THEMES
+
 import os
 from tktooltip import ToolTip
+
 
 
 def build_gui(settings):
@@ -12,6 +15,9 @@ def build_gui(settings):
     root.title("Ezi0 Port Scanner")
     root.geometry("600x650")
     root.resizable(False, False)
+
+    theme_name = settings.get("default_theme", "Dark")
+    theme = THEMES[theme_name]
 
     notebook = ttk.Notebook(root)
 
@@ -138,12 +144,14 @@ def build_gui(settings):
                 on_error=lambda title, msg: messagebox.showerror(title, msg),
                 on_update_progress=lambda scanned, total: update_progress(scanned, total)
             )
-            
 
+    def export():
+        save_results_dialog(root, theme, settings, formats, ui_elements)
+            
     start_button = ttk.Button(button_frame, state=NORMAL, text="▶ Start Scan", command=scantype)
     start_button.pack(side=RIGHT, ipady=15, ipadx=80, padx=(5, 0))
 
-    save_button = ttk.Button(button_frame, state=DISABLED, text="✔ Save Results", command=save_results_dialog)
+    save_button = ttk.Button(button_frame, state=DISABLED, text="✔ Save Results", command=export)
     save_button.pack(side=LEFT, ipady=15, ipadx=80, padx=(0, 5))
 
     # - Progress bar - #
