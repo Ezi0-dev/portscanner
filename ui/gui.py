@@ -1,14 +1,14 @@
+import os
+
 from tkinter import *
 from tkinter import ttk, filedialog, messagebox, simpledialog
+from tktooltip import ToolTip
+
 from core.config import scan_methods, nmap_flag_keys, themes, formats
 from core.scanner import start_scan, start_nmap_scan
 from core.export import save_results_dialog
-from ui.themes import THEMES
-
-import os
-from tktooltip import ToolTip
-
-
+from ui.settings import update_settings
+from ui.themes import THEMES, set_theme
 
 def build_gui(settings):
     root = Tk()
@@ -30,11 +30,7 @@ def build_gui(settings):
         "labels": [],
         "text_widgets": [],
         "checkbuttons": [],
-        "export": {
-            "checkbuttons": [],
-            "labels": [],
-            "toplevel": [],
-        }
+        "toplevel": []
     }
 
     checkbox_vars = {key: BooleanVar() for key in nmap_flag_keys}
@@ -44,8 +40,6 @@ def build_gui(settings):
         root.iconbitmap("assets/icon.ico")
     except:
         pass
-
-    scan_completed = False
 
     # - Tabs - #
 
@@ -211,6 +205,25 @@ def build_gui(settings):
     default_export_format_entry = ttk.Combobox(settings_frame, textvariable=default_export_format_var, values=formats, font=("Segoe UI", 16), width=19, state="readonly")
     default_export_format_entry.grid(row=6, column=1, sticky=W, padx=5, pady=(60, 0), ipadx=1)
 
+    # - Ugly asf i cba - #
+
+    settings_entries = {
+        "timeout": timeout_entry,
+        "threads": threads_entry,
+        "default_ip": default_ip_entry,
+        "default_start_port": default_start_port_entry,
+        "default_end_port": default_end_port_entry,
+        "export_format": default_export_format_entry,
+        "theme": default_theme_entry,
+        "scan_method": scan_method_entry,
+    }
+
+    def upd_settings():
+        update_settings(settings, settings_entries)
+
+    save_settings_button = ttk.Button(settings_tab, text="Save Settings", command=upd_settings)
+    save_settings_button.pack(pady=10, ipady=20, ipadx=40)
+
     # - Nmap settings tab - #
 
     nmap_settings_frame = Frame(nmap_tab)
@@ -259,6 +272,10 @@ def build_gui(settings):
     nmap_custom_args_label.pack(pady=(10, 0))
     nmap_custom_args_entry = Entry(nmap_settings_frame, textvariable=custom_args, width=40, font=("Segoe UI", 16))
     nmap_custom_args_entry.pack(anchor='w', padx=10)
+
+    # Removed refresh button, this is way better :3
+
+    default_theme_entry.bind("<<ComboboxSelected>>", lambda e: set_theme(default_theme_entry.get(), ui_elements, settings))
 
     for frames in [frame, button_frame, settings_frame, nmap_settings_frame]:
         ui_elements["frames"].append(frames)

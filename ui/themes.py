@@ -80,7 +80,7 @@ def set_theme(theme_name, ui_elements, settings):
         if label.winfo_exists():
             label.config(bg=theme["bg"], fg=theme["fg"])
 
-    for Toplevel in ui_elements["export"]["toplevel"]:
+    for Toplevel in ui_elements["toplevel"]:
         if Toplevel.winfo_exists():
             Toplevel.configure(bg=theme["bg"], borderwidth=0)
 

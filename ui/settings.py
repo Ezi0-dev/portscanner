@@ -4,7 +4,7 @@ import os
 from tkinter import ttk, filedialog, messagebox, simpledialog
 from tktooltip import ToolTip
 
-SETTINGS_FILE = "../settings.json"
+SETTINGS_FILE = "settings.json"
 
 DEFAULT_SETTINGS = {
     "timeout": 0.5,
@@ -40,33 +40,31 @@ def save_settings(settings):
     with open(SETTINGS_FILE, "w") as f:
         json.dump(settings, f, indent=4)
 
+
+def retrieve_settings_entries(entry_refs):
+    try:
+        return {
+            "timeout": float(entry_refs["timeout"].get()),
+            "max_threads": int(entry_refs["threads"].get()),
+            "default_ip": entry_refs["default_ip"].get(),
+            "default_start_port": int(entry_refs["default_start_port"].get()),
+            "default_end_port": int(entry_refs["default_end_port"].get()),
+            "default_export_format": entry_refs["export_format"].get().lower(),
+            "default_theme": entry_refs["theme"].get(),
+            "default_scan_method": entry_refs["scan_method"].get(),
+        }, None
+    except ValueError:
+        return None, "Invalid input"
+
 # - Save settings - #
 
-def upd_save_settings(settings):
-    try:
-        settings["timeout"] = float(timeout_entry.get())
-        settings["max_threads"] = int(threads_entry.get())
-        settings["default_ip"] = default_ip_entry.get()
-        settings["default_start_port"] = int(default_start_port_entry.get())
-        settings["default_end_port"] = int(default_end_port_entry.get())
-        settings["default_export_format"] = default_export_format_entry.get().lower()
-        settings["default_theme"] = default_theme_entry.get()
-        settings["default_scan_method"] = scan_method_entry.get()
+def update_settings(settings, entry_refs):
+        new_settings, error = retrieve_settings_entries(entry_refs)
 
+        settings.update(new_settings)
         save_settings(settings)
-        
-        ip_entry.delete(0, END)
-        ip_entry.insert(0, settings["default_ip"])
-
-        start_port_entry.delete(0, END)
-        start_port_entry.insert(0, str(settings["default_start_port"]))
-
-        end_port_entry.delete(0, END)    
-        end_port_entry.insert(0, str(settings["default_end_port"]))
 
         messagebox.showinfo("Success", "Settings have been saved successfully")
-    except ValueError:
-        messagebox.showerror("Error", "Invalid input!")
 
-    save_settings_button = ttk.Button(settings_tab, text="Save Settings", command=upd_save_settings)
-    save_settings_button.pack(pady=10, ipady=20, ipadx=40)
+
+    

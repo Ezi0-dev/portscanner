@@ -50,9 +50,9 @@ def save_results_dialog(root, theme, settings, formats, ui_elements):
     save_dialog_button = ttk.Button(win, text="✔ Save", command=confirm_format)
     save_dialog_button.pack(pady=10, ipady=15, ipadx=35)
 
-    ui_elements["export"]["labels"].append(save_results_label)
-    ui_elements["export"]["checkbuttons"].append(remember_check)
-    ui_elements["export"]["toplevel"].append(win)
+    ui_elements["labels"].append(save_results_label)
+    ui_elements["checkbuttons"].append(remember_check)
+    ui_elements["toplevel"].append(win)
 
 def save_results(format_type, settings):
     filetypes = {
