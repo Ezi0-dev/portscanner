@@ -7,11 +7,13 @@ import subprocess
 from tkinter import *
 from tkinter import ttk, filedialog, messagebox, simpledialog
 from tktooltip import ToolTip
-from ui.settings import save_settings, init_settings
+from ui.settings import save_settings
+from ui.themes import set_theme
 import core.config
 
 
 def save_results_dialog(root, theme, settings, formats, ui_elements):
+    set_theme(settings["default_theme"], ui_elements, settings)
     win = Toplevel(root)
     win.title("Save As")
     win.geometry("380x230")

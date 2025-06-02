@@ -1,6 +1,17 @@
 from tkinter import BooleanVar, StringVar
 
-SETTINGS_F = "../settings.json"
+SETTINGS_FILE = "settings.json"
+
+DEFAULT_SETTINGS = {
+    "timeout": 0.5,
+    "max_threads": 300,
+    "default_ip": "127.0.0.1",
+    "default_start_port": "",
+    "default_end_port": "",
+    "default_export_format": "txt",
+    "default_theme": "Dark",
+    "default_scan_method": "Socket"
+}
 
 scan_methods = ["Socket", "Nmap"]
 formats = ["txt", "csv", "json"]

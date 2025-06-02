@@ -98,79 +98,25 @@ def run_scan(ip, start_port, end_port, on_progress=None, on_complete=None, on_er
         
 # - Nmap Integration - #
 
-def run_nmap_scan():
-    progress_bar.start()
-    global result_box
-    target = ip_entry.get()
-    command = ['nmap', target]
 
-    for key, var in checkbox_vars.items():
-        if var.get():
-            command.append(nmap_flags[key])
+def run_nmap_scan_thread(ip, flags=None, custom=None, on_result=None, on_error=None, on_complete=None):
+    command = ['nmap', ip]
 
-    if custom_args.get():
-        command += custom_args.get().split()
+    if flags:
+        command += flags
+
+    if custom:
+        command += custom.split()
     
     try:
         result = subprocess.check_output(command, universal_newlines=True)
-        result_box.config(state=NORMAL, font=("Lucida Console", 10))
-        result_box.delete("1.0", END)
-        result_box.insert(END, result)
-        result_box.config(state=DISABLED)
-        progress_bar.stop()
-
-        global scan_completed
-        scan_completed = True
-        messagebox.showinfo("Scan Completed", "Nmap scan completed!")
+        if on_result:
+            on_result(result)
 
     except Exception as e:
-        result_box.insert(END, f"Nmap error {e}")
-
-
-def start_nmap_scan():
-    progress_bar.start()
-    progress_bar.config(mode='indeterminate')
-    thread = threading.Thread(target=run_nmap_scan_thread)
-    thread.start()
-
-
-def show_nmap_result(result):
-    global result_box
-    result_box.config(state=NORMAL, font=("Lucida Console", 10))
-    result_box.delete("1.0", END)
-    result_box.insert(END, result)
-
-
-    result_box.insert(END, f"\nScan completed. (っ◔◡◔)っ\n", "info")
-    result_box.config(state=DISABLED)
-    result_box.update_idletasks()
-    messagebox.showinfo("Scan Completed", "Nmap scan finished.")
-
-
-def run_nmap_scan_thread():
-    progress_bar.start()
-    global result_box
-    target = ip_entry.get()
-    command = ['nmap', target]
-
-    for key, var in checkbox_vars.items():
-        if var.get():
-            command.append(nmap_flags[key])
-
-    if custom_args.get():
-        command += custom_args.get().split()
-    
-    try:
-        result = subprocess.check_output(command, universal_newlines=True)
-        
-        progress_bar.config(mode='determinate')
-        root.after(0, lambda: show_nmap_result(result))
-
-        global scan_completed
-        scan_completed = True
-
-    except Exception as e:
-        root.after(0, lambda: show_nmap_result(f"Error: {e}"))
+        if on_error:
+            on_error(str(e))
 
     finally:
-        root.after(0, progress_bar.stop)
+        if on_complete:
+            on_complete()

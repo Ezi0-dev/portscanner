@@ -4,20 +4,10 @@ import os
 from tkinter import ttk, filedialog, messagebox, simpledialog
 from tktooltip import ToolTip
 
-SETTINGS_FILE = "settings.json"
+from core.config import DEFAULT_SETTINGS, SETTINGS_FILE, themes
 
-DEFAULT_SETTINGS = {
-    "timeout": 0.5,
-    "max_threads": 300,
-    "default_ip": "127.0.0.1",
-    "default_start_port": "",
-    "default_end_port": "",
-    "default_export_format": "txt",
-    "default_theme": "Dark",
-    "default_scan_method": "Socket"
-}
 
-def init_settings():
+def init_settings():    
     try:
         with open("settings.json", "r") as f:
             loaded = json.load(f)
@@ -30,6 +20,10 @@ def init_settings():
             loaded[key] = value
             changed = True
 
+    if "default_theme" not in loaded or loaded["default_theme"] not in themes:
+        loaded["default_theme"] = DEFAULT_SETTINGS["default_theme"]
+        changed = True
+
     if changed:
         with open("settings.json", "w") as f:
             json.dump(loaded, f, indent=4)
@@ -37,8 +31,11 @@ def init_settings():
     return loaded
 
 def save_settings(settings):
-    with open(SETTINGS_FILE, "w") as f:
-        json.dump(settings, f, indent=4)
+    try:
+        with open(SETTINGS_FILE, "w") as f:
+            json.dump(settings, f, indent=4)
+    except Exception as e:
+        messagebox.showerror("Could not save settings", str(e))
 
 
 def retrieve_settings_entries(entry_refs):
@@ -59,12 +56,19 @@ def retrieve_settings_entries(entry_refs):
 # - Save settings - #
 
 def update_settings(settings, entry_refs):
+    try:
         new_settings, error = retrieve_settings_entries(entry_refs)
+
+        if error:
+            messagebox.showerror("Error", error)
+            return
 
         settings.update(new_settings)
         save_settings(settings)
 
         messagebox.showinfo("Success", "Settings have been saved successfully")
+    except ValueError:
+        messagebox.showerror("Error", "Invalid input!")
 
 
     

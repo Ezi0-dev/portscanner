@@ -1,11 +1,12 @@
 import os
+import threading
 
 from tkinter import *
 from tkinter import ttk, filedialog, messagebox, simpledialog
 from tktooltip import ToolTip
 
-from core.config import scan_methods, nmap_flag_keys, themes, formats
-from core.scanner import start_scan, start_nmap_scan
+from core.config import scan_methods, nmap_flag_keys, themes, formats, nmap_flags
+from core.scanner import start_scan, start_nmap_scan, run_nmap_scan_thread
 from core.export import save_results_dialog
 from ui.settings import update_settings
 from ui.themes import THEMES, set_theme
@@ -70,6 +71,23 @@ def build_gui(settings):
     scan_method_entry.grid(row=1, column=0, sticky=E, padx=45, ipadx=1)
     ToolTip(scan_method_entry, delay=1, msg="NOTE : Nmap must be installed and added to PATH in Windows in order to function")
 
+    def disable_tab(event=None):
+        if scan_method_entry.get() == "Nmap":
+            notebook.tab(2, state=NORMAL)
+            start_port_entry.grid_remove()
+            start_port_label.grid_remove()
+            end_port_entry.grid_remove()
+            end_port_label.grid_remove()
+
+        else:
+            notebook.tab(2, state=DISABLED)
+            start_port_entry.grid()
+            start_port_label.grid()
+            end_port_entry.grid()
+            end_port_label.grid()
+
+    scan_method_entry.bind("<<ComboboxSelected>>", disable_tab)
+
     ip_entry_label = Label(frame, text="Target IP : ", font=("Segoe UI", 14, "bold"))
     ip_entry_label.grid(row=0, column=1, sticky=E)
     ip_entry = Entry(frame, bd=1, borderwidth=2, relief="solid", font=("Segoe UI", 12))
@@ -102,7 +120,42 @@ def build_gui(settings):
         result_box.config(state=DISABLED)
         
         if method == "Nmap":
-            start_nmap_scan()
+            try:
+                ip = ip_entry.get()
+                flags = [nmap_flags[k] for k, var in checkbox_vars.items() if var.get()]
+                custom = custom_args.get()
+
+            except Exception as e:
+                messagebox.showerror("Error", str(e))
+                return
+            
+            progress_bar.config(mode='indeterminate')
+            progress_bar.start()
+
+            def show_nmap_result(result):
+                result_box.config(state=NORMAL, font=("Lucida Console", 10))
+                result_box.delete("1.0", END)
+                result_box.insert(END, result)
+
+
+                result_box.insert(END, f"\nScan completed. (っ◔◡◔)っ\n", "info")
+                result_box.config(state=DISABLED)
+                result_box.update_idletasks()
+                messagebox.showinfo("Scan Completed", "Nmap scan finished.")
+            
+            def thread_target():
+                run_nmap_scan_thread(
+                    ip=ip,
+                    flags=flags,
+                    custom=custom,
+                    on_result=lambda result: root.after(0, lambda: show_nmap_result(result)),
+                    on_error=lambda err: root.after(0, lambda: show_nmap_result(f"Error: {err}")),
+                    on_complete=lambda: root.after(0, progress_bar.stop)
+            )
+            
+            thread = threading.Thread(target=thread_target)
+            thread.start()
+
         else:
             try:
                 ip = ip_entry.get()
@@ -148,6 +201,8 @@ def build_gui(settings):
     save_button = ttk.Button(button_frame, state=DISABLED, text="✔ Save Results", command=export)
     save_button.pack(side=LEFT, ipady=15, ipadx=80, padx=(0, 5))
 
+    ToolTip(save_button, delay=1, msg="NOTE : Works only for SOCKET scanning.")
+
     # - Progress bar - #
 
     progress_bar = ttk.Progressbar(scanner_tab, length=570)
@@ -189,18 +244,23 @@ def build_gui(settings):
 
     ToolTip(threads_entry, msg="NOTE : Only affects Socket scanning.")
 
+    if settings["default_theme"] not in themes:
+        settings["default_theme"] = themes[0]
+    if settings["default_export_format"] not in formats:
+        settings["default_export_format"] = formats[0]
+
     #  - Dropdowns (ugly) - #
 
     default_theme_label = Label(settings_frame, text="Theme:", font=("Segoe UI", 16))
     default_theme_label.grid(row=7, column=0, sticky=E, padx=5, pady=5)
-    default_theme_var = StringVar()
+    default_theme_var = StringVar(master=root)
     default_theme_var.set(settings["default_theme"])
     default_theme_entry = ttk.Combobox(settings_frame, textvariable=default_theme_var, values=themes, font=("Segoe UI", 16), width=19, state="readonly")
     default_theme_entry.grid(row=7, column=1, sticky=W, padx=5, pady=5, ipadx=1)
 
     default_export_format_label = Label(settings_frame, text="Export Format:", font=("Segoe UI", 16))
     default_export_format_label.grid(row=6, column=0, sticky=E, padx=5, pady=(60, 0))
-    default_export_format_var = StringVar()
+    default_export_format_var = StringVar(master=root)
     default_export_format_var.set(settings["default_export_format"])
     default_export_format_entry = ttk.Combobox(settings_frame, textvariable=default_export_format_var, values=formats, font=("Segoe UI", 16), width=19, state="readonly")
     default_export_format_entry.grid(row=6, column=1, sticky=W, padx=5, pady=(60, 0), ipadx=1)
@@ -219,6 +279,11 @@ def build_gui(settings):
     }
 
     def upd_settings():
+
+        # - Insanely stupid but it works - #
+        
+        theme = default_theme_var.get()
+        export = default_export_format_var.get()
         update_settings(settings, settings_entries)
 
     save_settings_button = ttk.Button(settings_tab, text="Save Settings", command=upd_settings)
@@ -245,13 +310,6 @@ def build_gui(settings):
         "verbose": verbose_var
     }
 
-    # Matching flags
-    nmap_flags = {
-        "stealth": "-sS",
-        "os_detect": "-O",
-        "version": "-sV",
-        "verbose": "-v"
-    }
     # - Widgets - #
 
     nmap_label = Label(nmap_settings_frame, text="Nmap Scan Options", font=("Segoe UI", 18, "bold"))
@@ -290,6 +348,8 @@ def build_gui(settings):
     for label in [ip_entry_label, start_port_label, end_port_label, default_theme_label, default_export_format_label,
                    scan_method_label, nmap_label, settings_label, nmap_custom_args_label]:
         ui_elements["labels"].append(label)
+
+    disable_tab()
 
     def on_closing():
         root.destroy()
