@@ -31,15 +31,3 @@ nmap_flags = {
     "version": "-sV",
     "verbose": "-v"
 }
-
-# BooleanVars
-def init_checkbox_vars():
-    return {
-        "stealth": BooleanVar(),
-        "os_detect": BooleanVar(),
-        "version": BooleanVar(),
-        "verbose": BooleanVar()
-    }
-
-def init_custom_args():
-    return StringVar()

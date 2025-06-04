@@ -22,6 +22,8 @@ def build_gui(settings):
 
     notebook = ttk.Notebook(root)
 
+    # - Append UI elements later - #
+    
     ui_elements = {
         "root": root,
         "notebook": notebook,
@@ -332,7 +334,6 @@ def build_gui(settings):
     nmap_custom_args_entry.pack(anchor='w', padx=10)
 
     # Removed refresh button, this is way better :3
-
     default_theme_entry.bind("<<ComboboxSelected>>", lambda e: set_theme(default_theme_entry.get(), ui_elements, settings))
 
     for frames in [frame, button_frame, settings_frame, nmap_settings_frame]:
