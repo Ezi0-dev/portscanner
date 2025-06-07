@@ -2,7 +2,7 @@ import os
 import threading
 
 from tkinter import *
-from tkinter import ttk, filedialog, messagebox, simpledialog
+from tkinter import ttk, messagebox
 from tktooltip import ToolTip
 
 from core.config import scan_methods, nmap_flag_keys, themes, formats, nmap_flags
