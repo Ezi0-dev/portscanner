@@ -6,14 +6,14 @@ from tkinter import ttk, filedialog, messagebox, simpledialog
 from tktooltip import ToolTip
 
 from core.config import scan_methods, nmap_flag_keys, themes, formats, nmap_flags
-from core.scanner import start_scan, start_nmap_scan, run_nmap_scan_thread
+from core.scanner import start_scan, run_nmap_scan_thread
 from core.export import save_results_dialog
 from ui.settings import update_settings
 from ui.themes import THEMES, set_theme
 
 def build_gui(settings):
     root = Tk()
-    root.title("Ezi0 Port Scanner")
+    root.title("Sentry")
     root.geometry("600x650")
     root.resizable(False, False)
 
