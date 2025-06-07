@@ -9,7 +9,7 @@
 
 ## 📦 Installation
 
-## To get Nmap to work with the program you need to add it to PATH in windows, at the bottom of [This](https://nmap.org/book/inst-windows.html) page it tells you how to do this easily
+## ⚠ To get Nmap to work with the program you need to add it to PATH in windows, at the bottom of [This](https://nmap.org/book/inst-windows.html) page it tells you how to do this easily
 
 ```bash
 git clone https://github.com/Ezi0-dev/sentry.git
