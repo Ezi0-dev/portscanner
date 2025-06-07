@@ -1,3 +1,9 @@
+<p align="center">
+  <img src="assets/icon.ico" alt="Logo" width="200"/>
+</p>
+
+
+
 Simple portscanner, no external downloads required.<br />
 Use "portscannerold" if you dont want GUI<br />
 <br />
