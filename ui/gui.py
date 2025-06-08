@@ -69,8 +69,8 @@ def build_gui(settings):
 
     scan_method_entry_var = StringVar(master=root)
     scan_method_entry_var.set(settings["default_scan_method"])
-    scan_method_entry = ttk.Combobox(frame, values=scan_methods, textvariable=scan_method_entry_var, font=("Segoe UI", 16), width=15, state="readonly")
-    scan_method_entry.grid(row=1, column=0, sticky=E, padx=45, ipadx=1)
+    scan_method_entry = ttk.Combobox(frame, values=scan_methods, style="Flat.TCombobox", textvariable=scan_method_entry_var, font=("Segoe UI", 16), width=15, state="readonly")
+    scan_method_entry.grid(row=1, column=0, sticky=E, padx=41, ipadx=1)
     ToolTip(scan_method_entry, delay=1, msg="NOTE : Nmap must be installed and added to PATH in Windows in order to function")
 
     def disable_tab(event=None):
@@ -257,14 +257,14 @@ def build_gui(settings):
     default_theme_label.grid(row=7, column=0, sticky=E, padx=5, pady=5)
     default_theme_var = StringVar(master=root)
     default_theme_var.set(settings["default_theme"])
-    default_theme_entry = ttk.Combobox(settings_frame, textvariable=default_theme_var, values=themes, font=("Segoe UI", 16), width=19, state="readonly")
+    default_theme_entry = ttk.Combobox(settings_frame, style="Flat.TCombobox", textvariable=default_theme_var, values=themes, font=("Segoe UI", 16), width=19, state="readonly")
     default_theme_entry.grid(row=7, column=1, sticky=W, padx=5, pady=5, ipadx=1)
 
     default_export_format_label = Label(settings_frame, text="Export Format:", font=("Segoe UI", 16))
     default_export_format_label.grid(row=6, column=0, sticky=E, padx=5, pady=(60, 0))
     default_export_format_var = StringVar(master=root)
     default_export_format_var.set(settings["default_export_format"])
-    default_export_format_entry = ttk.Combobox(settings_frame, textvariable=default_export_format_var, values=formats, font=("Segoe UI", 16), width=19, state="readonly")
+    default_export_format_entry = ttk.Combobox(settings_frame, style="Flat.TCombobox", textvariable=default_export_format_var, values=formats, font=("Segoe UI", 16), width=19, state="readonly")
     default_export_format_entry.grid(row=6, column=1, sticky=W, padx=5, pady=(60, 0), ipadx=1)
 
     # - Ugly asf i cba - #
@@ -317,13 +317,13 @@ def build_gui(settings):
     nmap_label = Label(nmap_settings_frame, text="Nmap Scan Options", font=("Segoe UI", 18, "bold"))
     nmap_label.pack(pady=5)
 
-    steath_check =Checkbutton(nmap_settings_frame, font=("Segoe UI", 16), text="Stealth Scan (-sS)", variable=stealth_var)
+    steath_check =Checkbutton(nmap_settings_frame, takefocus=0, font=("Segoe UI", 16), text="Stealth Scan (-sS)", variable=stealth_var)
     steath_check.pack(anchor='w')
-    os_check = Checkbutton(nmap_settings_frame, font=("Segoe UI", 16), text="OS Detection (-O)", variable=os_detect_var)
+    os_check = Checkbutton(nmap_settings_frame, takefocus=0, font=("Segoe UI", 16), text="OS Detection (-O)", variable=os_detect_var)
     os_check.pack(anchor='w')
-    ver_check = Checkbutton(nmap_settings_frame, font=("Segoe UI", 16), text="Version Detection (-sV)", variable=version_var)
+    ver_check = Checkbutton(nmap_settings_frame, takefocus=0, font=("Segoe UI", 16), text="Version Detection (-sV)", variable=version_var)
     ver_check.pack(anchor='w')
-    verbose_check = Checkbutton(nmap_settings_frame, font=("Segoe UI", 16), text="Verbose Output (-v)", variable=verbose_var)
+    verbose_check = Checkbutton(nmap_settings_frame, takefocus=0, font=("Segoe UI", 16), text="Verbose Output (-v)", variable=verbose_var)
     verbose_check.pack(anchor='w')
 
     ui_elements["checkbuttons"].extend([steath_check, os_check, ver_check, verbose_check])

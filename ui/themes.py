@@ -92,15 +92,49 @@ def set_theme(theme_name, ui_elements, settings):
     style = ttk.Style()
     style.theme_use("default")
 
-    style.configure("TCombobox", fieldbackground=theme["entry_bg"], background=theme["entry_bg"], foreground=theme["entry_fg"], selectforeground=theme["fg"], selectbackground=theme["combobox_highlight"], insertbackground=theme["highlight"], relief="flat", highlightbackground=theme["highlight"])
+    if "custom.Combo.button" not in style.element_names():
+        style.element_create("custom.Combo.button", "from", "default")
+
+    style.layout("Flat.TCombobox", [
+        ("Combobox.padding", {
+            "children": [
+                ("Combobox.textarea", {"sticky": "nswe"}),
+                ("custom.Combo.button", {"side": "right", "sticky": "ns"})
+            ],
+            "sticky": "nswe"
+        })
+    ])
+
+    style.configure("Flat.TCombobox", 
+                    fieldbackground=theme["entry_bg"], 
+                    borderwidth=0,
+                    relief='flat',
+                    padding=4,
+                    bd=0,
+                    highlightthickness=0,
+                    background=theme["entry_bg"], 
+                    foreground=theme["entry_fg"], 
+                    selectforeground=theme["fg"], 
+                    selectbackground=theme["combobox_highlight"], 
+                    insertbackground=theme["highlight"], 
+                    arrowcolor=theme["entry_fg"],
+                    highlightbackground=theme["highlight"],
+                    focuscolor=theme["bg"])
+    
     style.configure("TButton", background=theme["button_bg"], focuscolor=theme["button_bg"], foreground=theme["button_fg"], borderwidth=0, font=("Segoe UI", 14, "bold"))
 
-    style.map("TCombobox", fieldbackground=[('focus', theme["entry_bg"])], borderwidth=[('readonly', 0)], highlightbackground=[('focus', theme["highlight"])], highlightcolor=[('focus', theme["highlight"])], highlightthickness=[('focus', 1)])
+    style.map("Flat.TCombobox", 
+              fieldbackground=[('focus', theme["entry_bg"])], 
+              borderwidth=[('readonly', 0)], 
+              highlightbackground=[('focus', theme["highlight"])], 
+              highlightthickness=[('focus', 1)],
+              background=[("hover", theme["button_hover_bg"])])
+    
     style.map("TButton", background=[("active", theme["button_hover_bg"])])
 
     style.configure("TNotebook", background=theme["bg"], focuscolor=theme["notebook_bg"], borderwidth=0)
-    style.configure("TNotebook.Tab", background=theme["notebook_bg"], font=("Segoe UI", 11), foreground=theme["fg"], borderwidth=0)
-    style.map("TNotebook.Tab", background=[("selected", theme["entry_bg"])])
+    style.configure("TNotebook.Tab", background=theme["notebook_bg"], font=("Segoe UI", 11), foreground=theme["fg"], padding=[6, 2], borderwidth=0)
+    style.map("TNotebook.Tab", background=[("selected", theme["entry_bg"])], highlightcolor=[("selected", theme["highlight"])])
 
     style.configure("TProgressbar", background=theme["progress_bar"], borderwidth=0, troughcolor=theme["button_bg"])
 
