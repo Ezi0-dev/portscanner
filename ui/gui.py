@@ -195,7 +195,7 @@ def build_gui(settings):
             )
 
     def export():
-        save_results_dialog(root, theme, settings, formats, ui_elements)
+        save_results_dialog(root, theme, settings, formats, ui_elements, default_theme_entry)
             
     start_button = ttk.Button(button_frame, state=NORMAL, text="▶ Start Scan", command=scantype)
     start_button.pack(side=RIGHT, ipady=15, ipadx=80, padx=(5, 0))

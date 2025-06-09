@@ -12,8 +12,7 @@ from ui.themes import set_theme
 import core.config
 
 
-def save_results_dialog(root, theme, settings, formats, ui_elements):
-    set_theme(settings["default_theme"], ui_elements, settings)
+def save_results_dialog(root, theme, settings, formats, ui_elements, default_theme_entry):
     win = Toplevel(root)
     win.title("Save As")
     win.geometry("380x230")
@@ -31,7 +30,7 @@ def save_results_dialog(root, theme, settings, formats, ui_elements):
     format_type = StringVar()
     format_type.set(settings["default_export_format"]) # Selects the default.
 
-    format_dropdown = ttk.Combobox(win, textvariable=format_type, values=formats, font=("Segoe UI", 14), state="readonly")
+    format_dropdown = ttk.Combobox(win, style="Flat.TCombobox", textvariable=format_type, values=formats, font=("Segoe UI", 14), state="readonly")
     format_dropdown.pack(pady=5)
 
     remember_type = BooleanVar()
@@ -55,6 +54,8 @@ def save_results_dialog(root, theme, settings, formats, ui_elements):
     ui_elements["labels"].append(save_results_label)
     ui_elements["checkbuttons"].append(remember_check)
     ui_elements["toplevel"].append(win)
+
+    set_theme(default_theme_entry.get(), ui_elements, settings) # Finally fixed
 
 def save_results(format_type, settings):
     filetypes = {
