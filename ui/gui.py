@@ -168,7 +168,7 @@ def build_gui(settings):
                 return
             
             def update_result_box(msg):
-                result_box.config(state=NORMAL)
+                result_box.config(state=NORMAL, font=("Lucida Console", 15))
                 result_box.insert(END, msg)
                 result_box.config(state=DISABLED)
             
